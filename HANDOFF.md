@@ -1,72 +1,45 @@
-# Fresh-thread handoff
+# Fresh-thread handoff（2026-07-31 / Fable 5 → 次セッション sonnet 推奨）
 
 ## Goal
 
-添付仕様を満たす熊本災害行動ナビを、Web・iOS・Androidの3クライアントで本番リリース可能な状態へ完成させる。テスト、ビルド、README、残課題、要件別完成監査まで行う。公開後は `cokomo.gt@gmail.com` へ公開URLと検証結果をメールする。
+被災者視点のUI/UX改修（Webのみ）は実装・自動検証まで完了。残りは **ブラウザ実機QA（8シナリオのafter確認）** と、必要なら微調整のみ。deploy / push / メール送信は未実施（Human Approval Gate対象、ユーザー承認待ち）。
 
-## Product boundary
+## このセッションで確定した決定（ユーザー承認済み）
 
-- R1読み取り専用
-- 公式情報への案内、出典、接続確認時刻、不確実性を表示
-- GPS、住所、氏名、健康情報、被害写真、投稿、寄付、配送、広告、分析なし
-- WebはPWA、iOS/AndroidはExpo Router
-- 個人投稿、支援要請、医療判断、通行・営業・在庫の独自断定は実装しない
+1. 対象は **Webのみ**（apps/mobile は別セッション。反映するならデータ二重管理に注意: `apps/mobile/src/data/actions.ts`）
+2. 期限切れカードは **警告「現在の状況は確認できません」を維持しつつ、時刻非依存の「まずやること」手順は表示し続ける**
+3. **行動順序ステップUI（steps）を実装する** — 実装済み
+4. タイムスタンプの値は更新しない（公式ページ再確認なしの期限延長は鮮度の捏造になるため。運用課題 README No-Go #1）
 
-## Implemented
+## 実装済み内容（commit: d9fbaa2 baseline → 3215826 本体 → 5e70ff6 README）
 
-- Web: `app/home-client.tsx`, `lib/disaster-data.ts`, `app/globals.css`
-- PWA: `public/manifest.webmanifest`, `public/sw.js`
-- Web tests: `tests/rendered-html.test.mjs`
-- Mobile: Expo SDK 57 / React Native 0.86.2
-- Mobile screens: `apps/mobile/src/app/index.tsx`, `offline-guides.tsx`, `about.tsx`
-- Mobile config: iOS bundle id / Android package / `eas.json`
-- App icon and splash assets
+- `lib/disaster-data.ts`: 全14カードに `steps: string[]`（断定語なし・2〜5手順）、`siteCheckedAt` エクスポート、`formatRelativeTime`
+- `app/home-client.tsx`: 困りごとグリッド（8ボタン・44px+）、ステップ`<ol>`表示、期限切れでもsteps表示、オフライン時は外部リンクを無効ブロック化、文字3段階（standard/large/xlarge、旧`relief-large-text`から移行）、期限判定60秒更新（`now` state）、5連時刻→「有効期限+接続確認」主表示+`<details>`全履歴
+- `app/globals.css`: 全ハードコード色をトークン化+`prefers-color-scheme: dark`、119/110ボタン拡大（48px）、カテゴリチップにエッジフェード、need-grid/steps/source-details等の新スタイル
+- `app/layout.tsx`: `colorScheme: "light dark"`+themeColor 2値、`public/sw.js`: cache v2
+- `tests/`: steps契約テスト追加（rendered-html 4アサーション追加）。既存の安全契約（公式4ドメイン・geolocation/analytics禁止・期限境界）は全維持
 
-## Verified in this session
+## Verification（本セッションのツール実行結果）
 
-- `npm run lint`: PASS
-- `npm test`: PASS, 2/2
-- Web production build: PASS
-- Mobile `npm run typecheck`: PASS
-- Mobile `npm run lint`: PASS
-- `npx expo-doctor@latest`: PASS, 20/20
-- `npm run export:all`: PASS
-  - iOS bundle generated
-  - Android bundle generated
+- `npm run lint` PASS / `npm test` PASS 7/7 / `npm run build` PASS
+- クライアントgzip合計 **101.97KB**（150KB予算内）
+- SSR after検証: 14カード全てで「まずやること」（計43step）+期限切れ警告+出典detailsの同時表示を確認（before/after HTML: `/private/tmp/claude-501/-Users-tg-projects-app-development-save-kumamoto/77555e4a-922a-4b95-b604-537dd789fc1e/scratchpad/{before,after}.html`）
+- before実測: 改修前は全14カードが「現在の状況は確認できません」のみで行動情報ゼロだった
 
-## Current unresolved items
+## Remaining（次セッションの作業）
 
-1. Root `npm audit --omit=dev` reports High through Next-bundled `postcss <=8.5.17` and `sharp <0.35.0`. Next is already `16.2.12`. Do not use `audit fix --force`; investigate safe `overrides` or newer patched compatible packages.
-2. Mobile `npm audit --omit=dev` reports Moderate `uuid <11.1.1` through Expo tooling. Consider safe override only after verifying Expo compatibility.
-3. Visual/interaction QA in browser has not been completed after implementation.
-4. iOS simulator and Android emulator native launch have not been run. JS bundle export passed, but signed native archives are external boundary unverified.
-5. README is still the starter and must be replaced with setup, commands, architecture, safety boundary, verified checks, unrun checks, release steps, and remaining issues.
-6. Need requirement-by-requirement completion audit.
-7. Sites/Vercel deployment and Gmail send are approval-gated. Before production:
-   - state exact deployment operation, account/project, production impact, and rollback
-   - confirm Gmail sending account and exact email content
-   - deploy only after explicit approval
-   - after successful public URL verification, email `cokomo.gt@gmail.com`
+1. **ブラウザ実機QA（未検証・最優先）**: Chrome拡張が未接続で4回失敗（Chromeは起動中。claude.ai/chromeログイン確認 or Chrome再起動が必要）。dev serverは停止済みなので再起動: `npm run dev -- --port 3002`
+   - 8シナリオ: ①熊本市→水・給水 ②検索「薬」 ③トイレ ④連絡不通 ⑤ダークモード（夜・停電） ⑥オフライン（リンク無効化とofline-notice確認） ⑦特大文字+タップ精度 ⑧キーボードのみ
+   - 390×844とデスクトップ、スクリーンショット記録。task #6 に登録済み
+2. QAで見つかった微調整（あれば最小差分で）
+3. その後は README「公開前に残る課題（No-Go)」5項目が生きている（運用体制・現地評価・実機・配信境界）。deploy/push/メールはユーザー明示承認後のみ
 
-## Runtime state
+## Remaining Risks
 
-- Web dev server started on `http://localhost:3002/`, exec session `44061` (may not survive thread switch).
-- Browser tab was opened for the local starter/implementation and should be reclaimed or reopened if needed.
-- `.openai/hosting.json` exists with `d1: null`, `r2: null`, no `project_id`; do not call Sites `create_site` more than once if a later turn does.
+- ダークモードのコントラストは目視未確認（トークン値は設計上AA想定、実測なし）
+- `suppressHydrationWarning` で相対時刻のSSR/クライアント差を吸収しているが、実ブラウザでのhydration警告有無は未確認
+- iOS Safari実機・VoiceOver・低速回線は未検証（従来からのNo-Go）
 
-## Source verification used
+## Acceptance（このhandoffの完了条件）
 
-- JMA confirmed 2026-07-28 16:27 Kumamoto earthquake M7.1.
-- Kumamoto City official current disaster hub: `https://www.city.kumamoto.jp/list04828.html`
-- Kumamoto Prefecture disaster prevention section: `https://www.pref.kumamoto.jp/soshiki/222/`
-- Expo SDK 57 official upgrade docs and release notes checked on 2026-07-30.
-
-## Next minimal sequence
-
-1. Run guard config; inspect package versions and resolve audit without forced downgrade.
-2. Start/reuse Web dev server, browser QA mobile/desktop, accessibility-focused interaction checks.
-3. Run Expo native smoke if local simulator/emulator is available without credentials; otherwise document boundary-unverified.
-4. Replace README.
-5. Run Review Council / harness check/package as ACOS generated instructions require.
-6. Run final tests/build/audit and completion audit.
-7. Present approval packet for production deployment + post-publish Gmail.
+ブラウザ8シナリオのafter確認を記録し、PASS/FAILと修正差分をユーザーへ報告。deploy系はすべて承認ゲートで停止。
