@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" rx="220" fill="#152d4a"/>
+  <path d="M256 152h512v500c0 152-102 220-256 220s-256-68-256-220V152z" fill="#bd382c"/>
+  <text x="512" y="650" text-anchor="middle" fill="white" font-size="430" font-family="serif" font-weight="700">火</text>
+</svg>

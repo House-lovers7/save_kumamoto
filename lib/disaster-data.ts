@@ -1,0 +1,300 @@
+export type ActionCategory =
+  | "all"
+  | "emergency"
+  | "water"
+  | "essentials"
+  | "shelter"
+  | "medical"
+  | "communication"
+  | "transport"
+  | "recovery";
+
+export type SourceStatus = "official" | "unavailable" | "conflict";
+
+export type ActionCard = {
+  id: string;
+  category: Exclude<ActionCategory, "all">;
+  icon: string;
+  title: string;
+  summary: string;
+  action: string;
+  caution: string;
+  sourceName: string;
+  sourceUrl: string;
+  publishedAt: string;
+  fetchedAt: string;
+  checkedAt: string;
+  expiresAt: string;
+  sourceStatus: SourceStatus;
+  areas: string[];
+  offline: boolean;
+};
+
+export const municipalities = [
+  "熊本県全域",
+  "熊本市",
+  "宇城市",
+  "宇土市",
+  "八代市",
+  "氷川町",
+  "その他の市町村",
+] as const;
+
+export const categoryLabels: Record<ActionCategory, string> = {
+  all: "すべて",
+  emergency: "緊急・安全",
+  water: "水・給水",
+  essentials: "食料・生活",
+  shelter: "避難所",
+  medical: "薬・医療",
+  communication: "連絡・充電",
+  transport: "移動・道路",
+  recovery: "片付け・制度",
+};
+
+const contentTimes = {
+  publishedAt: "2026-07-30T09:35:00+09:00",
+  fetchedAt: "2026-07-30T09:35:00+09:00",
+  checkedAt: "2026-07-30T09:35:00+09:00",
+  expiresAt: "2026-07-30T13:35:00+09:00",
+  sourceStatus: "official" as const,
+};
+
+export const actionCards: ActionCard[] = [
+  {
+    id: "official-kumamoto",
+    category: "emergency",
+    icon: "公",
+    title: "熊本県の最新情報を確認する",
+    summary:
+      "県の災害情報、被害状況、支援情報を確認します。古い画面を開いている場合は更新日時も見てください。",
+    action: "熊本県公式の防災情報を開く",
+    caution: "このアプリは県や市の公式サービスではありません。",
+    sourceName: "熊本県 防災推進課",
+    sourceUrl: "https://www.pref.kumamoto.jp/soshiki/222/",
+    ...contentTimes,
+    areas: ["熊本県全域"],
+    offline: false,
+  },
+  {
+    id: "kumamoto-city-hub",
+    category: "emergency",
+    icon: "市",
+    title: "熊本市の地震情報をまとめて見る",
+    summary:
+      "避難所、施設休止、災害ごみ、り災証明など、熊本市の令和8年熊本地震情報を確認します。",
+    action: "熊本市公式の集約ページを開く",
+    caution: "項目ごとに発表時刻が異なります。各ページの更新時刻を確認してください。",
+    sourceName: "熊本市",
+    sourceUrl: "https://www.city.kumamoto.jp/list04828.html",
+    ...contentTimes,
+    areas: ["熊本市"],
+    offline: false,
+  },
+  {
+    id: "water",
+    category: "water",
+    icon: "水",
+    title: "給水所へ向かう前に確認する",
+    summary:
+      "開設場所だけでなく、実施時間、容器の要否、配布上限、給水車の一時不在を確認します。",
+    action: "市町村の公式災害ページを確認する",
+    caution:
+      "「登録施設」と「現在使える施設」は別です。公式に利用可能と確認できない場所へ向かわないでください。",
+    sourceName: "熊本県・各市町村公式情報",
+    sourceUrl: "https://www.pref.kumamoto.jp/soshiki/222/",
+    ...contentTimes,
+    areas: ["熊本県全域", "熊本市", "宇城市", "宇土市", "八代市", "氷川町"],
+    offline: true,
+  },
+  {
+    id: "food-and-supplies",
+    category: "essentials",
+    icon: "食",
+    title: "水・食料・生活用品の入手先を確認する",
+    summary:
+      "店舗営業、自治体配布、配送受付は別々に変化します。市町村の公式案内と事業者公式情報を確認します。",
+    action: "熊本県の生活支援情報を確認する",
+    caution:
+      "このアプリは在庫や到着時刻を保証しません。古い営業情報だけで移動・注文しないでください。",
+    sourceName: "熊本県・各市町村公式情報",
+    sourceUrl: "https://www.pref.kumamoto.jp/soshiki/222/",
+    ...contentTimes,
+    areas: ["熊本県全域"],
+    offline: true,
+  },
+  {
+    id: "fuel",
+    category: "essentials",
+    icon: "油",
+    title: "給油できる場所を公式情報で確認する",
+    summary:
+      "営業、給油制限、支払方法、道路規制を別々に確認し、出発直前に状況を見直します。",
+    action: "熊本県の災害情報を確認する",
+    caution:
+      "営業中・在庫ありとは断定しません。補給時刻や在庫量をSNSへ転載しないでください。",
+    sourceName: "熊本県・事業者公式情報",
+    sourceUrl: "https://www.pref.kumamoto.jp/soshiki/222/",
+    ...contentTimes,
+    areas: ["熊本県全域"],
+    offline: true,
+  },
+  {
+    id: "toilet",
+    category: "essentials",
+    icon: "便",
+    title: "トイレが使えないときの安全な手順",
+    summary:
+      "下水・浄化槽の状況を確認し、携帯トイレや袋を使う場合は自治体の収集・保管方法に従います。",
+    action: "市町村の断水・ごみ情報を確認する",
+    caution:
+      "断水時に便器へ水を流すと逆流する場合があります。自治体の案内を優先してください。",
+    sourceName: "熊本県・各市町村公式情報",
+    sourceUrl: "https://www.pref.kumamoto.jp/soshiki/222/",
+    ...contentTimes,
+    areas: ["熊本県全域"],
+    offline: true,
+  },
+  {
+    id: "infant-care",
+    category: "essentials",
+    icon: "子",
+    title: "乳幼児用品と子育て支援を確認する",
+    summary:
+      "ミルク、離乳食、おむつ、授乳・休憩場所、休止施設の代替窓口を公式案内から確認します。",
+    action: "熊本県の子育て・生活支援情報を確認する",
+    caution:
+      "乳幼児の体調をこのアプリで判断しません。心配な症状は医療機関や公的相談先へ確認してください。",
+    sourceName: "熊本県・各市町村公式情報",
+    sourceUrl: "https://www.pref.kumamoto.jp/soshiki/222/",
+    ...contentTimes,
+    areas: ["熊本県全域"],
+    offline: true,
+  },
+  {
+    id: "elder-care",
+    category: "essentials",
+    icon: "介",
+    title: "高齢者・介護の支援継続先を確認する",
+    summary:
+      "介護、食事、入浴、服薬、移動支援について、休止施設と自治体の代替相談窓口を確認します。",
+    action: "熊本県の高齢者・福祉情報を確認する",
+    caution:
+      "氏名、病名、服薬、居場所を公開画面やSNSへ投稿しないでください。",
+    sourceName: "熊本県・各市町村公式情報",
+    sourceUrl: "https://www.pref.kumamoto.jp/soshiki/222/",
+    ...contentTimes,
+    areas: ["熊本県全域"],
+    offline: true,
+  },
+  {
+    id: "shelter",
+    category: "shelter",
+    icon: "避",
+    title: "避難所の開設・条件を確認する",
+    summary:
+      "開設状況に加え、ペット同伴、車中泊、車椅子、乳幼児、充電などの利用条件を確認します。",
+    action: "熊本市の避難所情報を開く",
+    caution:
+      "混雑や設備は変化します。個人の避難先や避難者名をSNSへ投稿しないでください。",
+    sourceName: "熊本市 防災サイト",
+    sourceUrl: "https://www.city.kumamoto.jp/default.html",
+    ...contentTimes,
+    areas: ["熊本市"],
+    offline: false,
+  },
+  {
+    id: "medical",
+    category: "medical",
+    icon: "薬",
+    title: "薬・医療を止めない",
+    summary:
+      "診療可能な医療機関でも、診療科や受付が制限される場合があります。公式案内と代替連絡手段を確認します。",
+    action: "熊本県の医療情報を確認する",
+    caution:
+      "このアプリは診断や受入可否を判定しません。重い症状や命の危険がある場合は119番です。",
+    sourceName: "熊本県",
+    sourceUrl: "https://www.pref.kumamoto.jp/",
+    ...contentTimes,
+    areas: ["熊本県全域"],
+    offline: true,
+  },
+  {
+    id: "communication",
+    category: "communication",
+    icon: "電",
+    title: "連絡できないときの順番",
+    summary:
+      "携帯会社の障害、JAPANローミング™、00000JAPAN、公衆電話、災害用伝言171を順に確認します。",
+    action: "通信各社の公式障害情報を確認する",
+    caution:
+      "00000JAPANは暗号化されていません。住所、医療情報、ID、パスワード、金融情報を送らないでください。",
+    sourceName: "電気通信事業者協会（TCA）・通信各社",
+    sourceUrl: "https://www.tca.or.jp/information/japan-roaming.html",
+    ...contentTimes,
+    areas: ["熊本県全域"],
+    offline: true,
+  },
+  {
+    id: "roads",
+    category: "transport",
+    icon: "道",
+    title: "移動前に道路・交通を再確認する",
+    summary:
+      "目的地が開いていても、道路規制や公共交通の運休で到達できない場合があります。",
+    action: "国土交通省の道路情報を確認する",
+    caution:
+      "通行実績は通行可能の保証ではありません。出発直前に道路管理者と現地の規制を優先してください。",
+    sourceName: "国土交通省 九州地方整備局",
+    sourceUrl: "https://www.qsr.mlit.go.jp/",
+    ...contentTimes,
+    areas: ["熊本県全域"],
+    offline: true,
+  },
+  {
+    id: "evidence",
+    category: "recovery",
+    icon: "撮",
+    title: "片付け・修理の前に写真を残す",
+    summary:
+      "建物の外側4方向、各部屋の全景、被災箇所の接写を撮り、申請に必要な証拠を残します。",
+    action: "熊本市のり災証明案内を確認する",
+    caution:
+      "表札、顔、書類番号、位置情報が写る写真をSNSや非公式業者へ渡さないでください。",
+    sourceName: "熊本市",
+    sourceUrl: "https://www.city.kumamoto.jp/list04828.html",
+    ...contentTimes,
+    areas: ["熊本市"],
+    offline: true,
+  },
+  {
+    id: "support-systems",
+    category: "recovery",
+    icon: "順",
+    title: "支援制度は手続きの順番を確認する",
+    summary:
+      "写真、相談、見積、契約、支払いの順番を確認します。先に支払うと利用できない制度があります。",
+    action: "熊本市の公式支援情報を確認する",
+    caution:
+      "このアプリは受給可否を判定しません。期限と必要書類を公式窓口で最終確認してください。",
+    sourceName: "熊本市",
+    sourceUrl: "https://www.city.kumamoto.jp/list04828.html",
+    ...contentTimes,
+    areas: ["熊本市"],
+    offline: true,
+  },
+];
+
+export function formatTimestamp(value: string) {
+  return new Intl.DateTimeFormat("ja-JP", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Tokyo",
+  }).format(new Date(value));
+}
+
+export function isExpired(card: ActionCard, now = new Date()) {
+  return now.getTime() >= new Date(card.expiresAt).getTime();
+}

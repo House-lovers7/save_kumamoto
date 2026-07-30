@@ -1,0 +1,18 @@
+{
+  "name": "くまもと いまどうするナビ",
+  "short_name": "いまどうする",
+  "description": "困りごとから熊本の公式災害情報へ案内します。",
+  "lang": "ja",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f8f5",
+  "theme_color": "#152d4a",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
