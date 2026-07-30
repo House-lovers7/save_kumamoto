@@ -1,5 +1,8 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo } from 'react';
+import { ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { paletteFor, type Palette } from '@/theme';
 
 const guides = [
   {
@@ -25,6 +28,9 @@ const guides = [
 ];
 
 export default function OfflineGuidesScreen() {
+  const palette = paletteFor(useColorScheme());
+  const styles = useMemo(() => createStyles(palette), [palette]);
+
   return (
     <SafeAreaView edges={['bottom']} style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -50,18 +56,20 @@ export default function OfflineGuidesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f5f7f4' },
-  content: { padding: 16, gap: 14, paddingBottom: 40 },
-  intro: { padding: 23, borderRadius: 8, borderBottomRightRadius: 34, backgroundColor: '#152d4a' },
-  eyebrow: { color: '#b8c8d7', fontSize: 11, fontWeight: '900', letterSpacing: 1 },
-  title: { color: '#fff', fontFamily: 'serif', fontSize: 29, lineHeight: 38, fontWeight: '800', marginTop: 8 },
-  introText: { color: '#d5e0e9', fontSize: 14, lineHeight: 22, marginTop: 12 },
-  card: { backgroundColor: '#fff', borderRadius: 8, padding: 21, borderLeftWidth: 5, borderLeftColor: '#152d4a' },
-  cardTitle: { color: '#132238', fontFamily: 'serif', fontSize: 23, fontWeight: '800', marginBottom: 16 },
-  step: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginBottom: 13 },
-  stepNumber: { width: 29, height: 29, paddingTop: 4, borderRadius: 15, backgroundColor: '#e8ecef', textAlign: 'center', color: '#152d4a', fontWeight: '900' },
-  stepText: { flex: 1, color: '#3e4c5c', fontSize: 15, lineHeight: 23 },
-  warning: { marginTop: 5, borderRadius: 5, padding: 13, backgroundColor: '#fff0ed' },
-  warningText: { color: '#76251e', fontSize: 13, lineHeight: 20, fontWeight: '700' },
-});
+function createStyles(c: Palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.paper },
+    content: { padding: 16, gap: 14, paddingBottom: 40 },
+    intro: { padding: 23, borderRadius: 8, borderBottomRightRadius: 34, backgroundColor: c.navy },
+    eyebrow: { color: c.onNavyMuted, fontSize: 11, fontWeight: '900', letterSpacing: 1 },
+    title: { color: c.onNavy, fontFamily: 'serif', fontSize: 29, lineHeight: 38, fontWeight: '800', marginTop: 8 },
+    introText: { color: c.onNavyMuted, fontSize: 14, lineHeight: 22, marginTop: 12 },
+    card: { backgroundColor: c.surface, borderRadius: 8, padding: 21, borderWidth: 1, borderColor: c.line, borderLeftWidth: 5, borderLeftColor: c.navy },
+    cardTitle: { color: c.ink, fontFamily: 'serif', fontSize: 23, fontWeight: '800', marginBottom: 16 },
+    step: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginBottom: 13 },
+    stepNumber: { width: 29, height: 29, paddingTop: 4, borderRadius: 15, overflow: 'hidden', backgroundColor: c.mist, textAlign: 'center', color: c.accentInk, fontWeight: '900' },
+    stepText: { flex: 1, color: c.bodyText, fontSize: 15, lineHeight: 23 },
+    warning: { marginTop: 5, borderRadius: 5, padding: 13, backgroundColor: c.redSoft },
+    warningText: { color: c.dangerInk, fontSize: 13, lineHeight: 20, fontWeight: '700' },
+  });
+}

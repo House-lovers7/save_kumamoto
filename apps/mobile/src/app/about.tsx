@@ -1,7 +1,13 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo } from 'react';
+import { ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { paletteFor, type Palette } from '@/theme';
+
 export default function AboutScreen() {
+  const palette = paletteFor(useColorScheme());
+  const styles = useMemo(() => createStyles(palette), [palette]);
+
   return (
     <SafeAreaView edges={['bottom']} style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -27,14 +33,16 @@ export default function AboutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f5f7f4' },
-  content: { padding: 20, paddingBottom: 48 },
-  title: { color: '#132238', fontFamily: 'serif', fontSize: 31, lineHeight: 40, fontWeight: '800' },
-  lead: { color: '#3e4c5c', fontSize: 16, lineHeight: 25, marginTop: 12, marginBottom: 24 },
-  section: { paddingVertical: 18, borderTopWidth: 1, borderTopColor: '#cfd6dc' },
-  heading: { color: '#152d4a', fontSize: 17, fontWeight: '900' },
-  body: { color: '#3e4c5c', fontSize: 15, lineHeight: 24, marginTop: 6 },
-  notice: { padding: 18, borderRadius: 7, backgroundColor: '#e8efe9', marginTop: 16 },
-  noticeText: { color: '#17483c', fontSize: 14, lineHeight: 22, fontWeight: '700' },
-});
+function createStyles(c: Palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.paper },
+    content: { padding: 20, paddingBottom: 48 },
+    title: { color: c.ink, fontFamily: 'serif', fontSize: 31, lineHeight: 40, fontWeight: '800' },
+    lead: { color: c.bodyText, fontSize: 16, lineHeight: 25, marginTop: 12, marginBottom: 24 },
+    section: { paddingVertical: 18, borderTopWidth: 1, borderTopColor: c.line },
+    heading: { color: c.accentInk, fontSize: 17, fontWeight: '900' },
+    body: { color: c.bodyText, fontSize: 15, lineHeight: 24, marginTop: 6 },
+    notice: { padding: 18, borderRadius: 7, backgroundColor: c.calmBg, marginTop: 16 },
+    noticeText: { color: c.calmInk, fontSize: 14, lineHeight: 22, fontWeight: '700' },
+  });
+}
