@@ -1,45 +1,42 @@
-# Fresh-thread handoff（2026-07-31 / Fable 5 → 次セッション sonnet 推奨）
+# Fresh-thread handoff（2026-07-31 更新）
 
-## Goal
+## 現状
 
-被災者視点のUI/UX改修（Webのみ）は実装・自動検証まで完了。残りは **ブラウザ実機QA（8シナリオのafter確認）** と、必要なら微調整のみ。deploy / push / メール送信は未実施（Human Approval Gate対象、ユーザー承認待ち）。
+被災者視点のUI/UX改修（Webのみ）は **実装・実ブラウザQA・修正まで完了**。Web側で残っているのはコード外の運用課題（README「公開前に残る課題」）のみ。deploy / push / メール送信は未実施（Human Approval Gate、ユーザー承認待ち）。
 
-## このセッションで確定した決定（ユーザー承認済み）
+## 決定事項（ユーザー承認済み）
 
-1. 対象は **Webのみ**（apps/mobile は別セッション。反映するならデータ二重管理に注意: `apps/mobile/src/data/actions.ts`）
-2. 期限切れカードは **警告「現在の状況は確認できません」を維持しつつ、時刻非依存の「まずやること」手順は表示し続ける**
-3. **行動順序ステップUI（steps）を実装する** — 実装済み
-4. タイムスタンプの値は更新しない（公式ページ再確認なしの期限延長は鮮度の捏造になるため。運用課題 README No-Go #1）
+1. 対象は **Webのみ**（apps/mobile は未反映。反映する場合はデータ二重管理に注意: `apps/mobile/src/data/actions.ts` に `steps` / `keywords` が無い）
+2. 期限切れカードは警告を維持しつつ、時刻非依存の「まずやること」手順は表示し続ける
+3. 行動順序ステップUI（`steps`）を実装する
+4. タイムスタンプの値は更新しない（公式ページ再確認なしの期限延長は鮮度の捏造。運用課題 README No-Go #1）
 
-## 実装済み内容（commit: d9fbaa2 baseline → 3215826 本体 → 5e70ff6 README）
+## commit
 
-- `lib/disaster-data.ts`: 全14カードに `steps: string[]`（断定語なし・2〜5手順）、`siteCheckedAt` エクスポート、`formatRelativeTime`
-- `app/home-client.tsx`: 困りごとグリッド（8ボタン・44px+）、ステップ`<ol>`表示、期限切れでもsteps表示、オフライン時は外部リンクを無効ブロック化、文字3段階（standard/large/xlarge、旧`relief-large-text`から移行）、期限判定60秒更新（`now` state）、5連時刻→「有効期限+接続確認」主表示+`<details>`全履歴
-- `app/globals.css`: 全ハードコード色をトークン化+`prefers-color-scheme: dark`、119/110ボタン拡大（48px）、カテゴリチップにエッジフェード、need-grid/steps/source-details等の新スタイル
-- `app/layout.tsx`: `colorScheme: "light dark"`+themeColor 2値、`public/sw.js`: cache v2
-- `tests/`: steps契約テスト追加（rendered-html 4アサーション追加）。既存の安全契約（公式4ドメイン・geolocation/analytics禁止・期限境界）は全維持
+- `d9fbaa2` baseline
+- `3215826` UI/UX改修本体（need grid / steps / 鮮度表示 / ダークモード / 文字3段階 / オフライン）
+- `5e70ff6` README
+- `14deea0` 実ブラウザQAで見つかった5件の修正
+- `HEAD` README検証結果更新
 
-## Verification（本セッションのツール実行結果）
+## 実ブラウザQAの結果（Playwright headless Chromium）
 
-- `npm run lint` PASS / `npm test` PASS 7/7 / `npm run build` PASS
-- クライアントgzip合計 **101.97KB**（150KB予算内）
-- SSR after検証: 14カード全てで「まずやること」（計43step）+期限切れ警告+出典detailsの同時表示を確認（before/after HTML: `/private/tmp/claude-501/-Users-tg-projects-app-development-save-kumamoto/77555e4a-922a-4b95-b604-537dd789fc1e/scratchpad/{before,after}.html`）
-- before実測: 改修前は全14カードが「現在の状況は確認できません」のみで行動情報ゼロだった
+390×844 と 1440×900 で 15項目PASS / 0 FAIL。詳細はREADME「現在の検証結果」。
+QAスクリプトは scratchpad（セッション破棄で消える）にあるため、恒久化するなら `tests/` へ移すか再作成する。
+Playwright は本repo未導入で、`/Users/tg/projects/app_development/adult_affliliate_master/node_modules/playwright` を参照して実行した（依存追加はしていない）。
 
-## Remaining（次セッションの作業）
+## Remaining（Web）
 
-1. **ブラウザ実機QA（未検証・最優先）**: Chrome拡張が未接続で4回失敗（Chromeは起動中。claude.ai/chromeログイン確認 or Chrome再起動が必要）。dev serverは停止済みなので再起動: `npm run dev -- --port 3002`
-   - 8シナリオ: ①熊本市→水・給水 ②検索「薬」 ③トイレ ④連絡不通 ⑤ダークモード（夜・停電） ⑥オフライン（リンク無効化とofline-notice確認） ⑦特大文字+タップ精度 ⑧キーボードのみ
-   - 390×844とデスクトップ、スクリーンショット記録。task #6 に登録済み
-2. QAで見つかった微調整（あれば最小差分で）
-3. その後は README「公開前に残る課題（No-Go)」5項目が生きている（運用体制・現地評価・実機・配信境界）。deploy/push/メールはユーザー明示承認後のみ
+1. **Chrome拡張(claude-in-chrome)は本セッション中ずっと未接続**。人間の目視確認をするなら手動で `npm run dev -- --port 3002` を起動してブラウザで開く
+2. QAスクリプトの恒久化（任意）
+3. README「公開前に残る課題」5項目：公式情報の再確認と時刻更新／運営・訂正体制／現地評価／ネイティブ実機・署名／配信境界
 
 ## Remaining Risks
 
-- ダークモードのコントラストは目視未確認（トークン値は設計上AA想定、実測なし）
-- `suppressHydrationWarning` で相対時刻のSSR/クライアント差を吸収しているが、実ブラウザでのhydration警告有無は未確認
-- iOS Safari実機・VoiceOver・低速回線は未検証（従来からのNo-Go）
+- iOS Safari実機・VoiceOver・低速回線は未検証（headless Chromiumでは代替できない）
+- モバイルアプリ（Expo）は今回の改修が未反映で、Webと体験が乖離している
+- 全カードが期限切れのままなので、公開するなら先に公式情報と時刻の更新が必要
 
-## Acceptance（このhandoffの完了条件）
+## Acceptance
 
-ブラウザ8シナリオのafter確認を記録し、PASS/FAILと修正差分をユーザーへ報告。deploy系はすべて承認ゲートで停止。
+Web側のUI/UX改修は完了。次に進むならモバイル反映か、公開前の運用課題（No-Go 5項目）のどちらか。deploy / push / メールはユーザー明示承認後のみ。
