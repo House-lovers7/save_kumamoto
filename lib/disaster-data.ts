@@ -17,6 +17,7 @@ export type ActionCard = {
   icon: string;
   title: string;
   summary: string;
+  steps: string[];
   action: string;
   caution: string;
   sourceName: string;
@@ -68,6 +69,11 @@ export const actionCards: ActionCard[] = [
     title: "熊本県の最新情報を確認する",
     summary:
       "県の災害情報、被害状況、支援情報を確認します。古い画面を開いている場合は更新日時も見てください。",
+    steps: [
+      "命の危険があるときは、まず119・110に電話する",
+      "県の公式ページで最新の発表時刻を確認する",
+      "自分の市町村のページも合わせて確認する",
+    ],
     action: "熊本県公式の防災情報を開く",
     caution: "このアプリは県や市の公式サービスではありません。",
     sourceName: "熊本県 防災推進課",
@@ -83,6 +89,11 @@ export const actionCards: ActionCard[] = [
     title: "熊本市の地震情報をまとめて見る",
     summary:
       "避難所、施設休止、災害ごみ、り災証明など、熊本市の令和8年熊本地震情報を確認します。",
+    steps: [
+      "知りたい項目（避難所・ごみ・り災証明など）を決める",
+      "公式ページで項目ごとの更新時刻を確認する",
+      "窓口へ行く前に受付時間と場所を確認する",
+    ],
     action: "熊本市公式の集約ページを開く",
     caution: "項目ごとに発表時刻が異なります。各ページの更新時刻を確認してください。",
     sourceName: "熊本市",
@@ -98,6 +109,11 @@ export const actionCards: ActionCard[] = [
     title: "給水所へ向かう前に確認する",
     summary:
       "開設場所だけでなく、実施時間、容器の要否、配布上限、給水車の一時不在を確認します。",
+    steps: [
+      "公式ページで開設中の給水所と実施時間を確認する",
+      "容器（ポリタンク・ペットボトル）を用意する",
+      "出発の直前に、もう一度最新情報を確認する",
+    ],
     action: "市町村の公式災害ページを確認する",
     caution:
       "「登録施設」と「現在使える施設」は別です。公式に利用可能と確認できない場所へ向かわないでください。",
@@ -114,6 +130,11 @@ export const actionCards: ActionCard[] = [
     title: "水・食料・生活用品の入手先を確認する",
     summary:
       "店舗営業、自治体配布、配送受付は別々に変化します。市町村の公式案内と事業者公式情報を確認します。",
+    steps: [
+      "市町村の公式案内で配布場所と時間を確認する",
+      "店舗は公式サイト・公式SNSの営業情報を確認する",
+      "移動の前に道路状況も確認する",
+    ],
     action: "熊本県の生活支援情報を確認する",
     caution:
       "このアプリは在庫や到着時刻を保証しません。古い営業情報だけで移動・注文しないでください。",
@@ -130,6 +151,11 @@ export const actionCards: ActionCard[] = [
     title: "給油できる場所を公式情報で確認する",
     summary:
       "営業、給油制限、支払方法、道路規制を別々に確認し、出発直前に状況を見直します。",
+    steps: [
+      "残量に余裕があるうちに給油の計画を立てる",
+      "公式情報で営業・給油制限・支払方法を確認する",
+      "出発の直前に道路規制を確認する",
+    ],
     action: "熊本県の災害情報を確認する",
     caution:
       "営業中・在庫ありとは断定しません。補給時刻や在庫量をSNSへ転載しないでください。",
@@ -146,6 +172,11 @@ export const actionCards: ActionCard[] = [
     title: "トイレが使えないときの安全な手順",
     summary:
       "下水・浄化槽の状況を確認し、携帯トイレや袋を使う場合は自治体の収集・保管方法に従います。",
+    steps: [
+      "断水中は便器に水を流さない（逆流の危険）",
+      "携帯トイレやごみ袋+吸水材で代用する",
+      "使用後のごみの出し方は自治体の案内に従う",
+    ],
     action: "市町村の断水・ごみ情報を確認する",
     caution:
       "断水時に便器へ水を流すと逆流する場合があります。自治体の案内を優先してください。",
@@ -162,6 +193,11 @@ export const actionCards: ActionCard[] = [
     title: "乳幼児用品と子育て支援を確認する",
     summary:
       "ミルク、離乳食、おむつ、授乳・休憩場所、休止施設の代替窓口を公式案内から確認します。",
+    steps: [
+      "公式案内でミルク・おむつなどの配布先を確認する",
+      "授乳・休憩場所は市町村の窓口に確認する",
+      "体調が心配なときは医療機関・相談窓口へ連絡する",
+    ],
     action: "熊本県の子育て・生活支援情報を確認する",
     caution:
       "乳幼児の体調をこのアプリで判断しません。心配な症状は医療機関や公的相談先へ確認してください。",
@@ -178,6 +214,11 @@ export const actionCards: ActionCard[] = [
     title: "高齢者・介護の支援継続先を確認する",
     summary:
       "介護、食事、入浴、服薬、移動支援について、休止施設と自治体の代替相談窓口を確認します。",
+    steps: [
+      "利用中の事業所に休止・代替の予定を確認する",
+      "つながらないときは市町村の相談窓口へ連絡する",
+      "薬が切れそうなときは早めに医療機関へ相談する",
+    ],
     action: "熊本県の高齢者・福祉情報を確認する",
     caution:
       "氏名、病名、服薬、居場所を公開画面やSNSへ投稿しないでください。",
@@ -194,6 +235,11 @@ export const actionCards: ActionCard[] = [
     title: "避難所の開設・条件を確認する",
     summary:
       "開設状況に加え、ペット同伴、車中泊、車椅子、乳幼児、充電などの利用条件を確認します。",
+    steps: [
+      "公式ページで開設中の避難所を確認する",
+      "ペット・車中泊・車椅子などの条件を確認する",
+      "移動が難しいときは市町村へ相談する",
+    ],
     action: "熊本市の避難所情報を開く",
     caution:
       "混雑や設備は変化します。個人の避難先や避難者名をSNSへ投稿しないでください。",
@@ -210,6 +256,12 @@ export const actionCards: ActionCard[] = [
     title: "薬・医療を止めない",
     summary:
       "診療可能な医療機関でも、診療科や受付が制限される場合があります。公式案内と代替連絡手段を確認します。",
+    steps: [
+      "命の危険・重い症状は、すぐ119番に電話する",
+      "公式の医療情報で診療状況を確認する",
+      "受け入れ可否は、行く前に電話で確認する",
+      "お薬手帳か、薬の名前がわかるものを持って行く",
+    ],
     action: "熊本県の医療情報を確認する",
     caution:
       "このアプリは診断や受入可否を判定しません。重い症状や命の危険がある場合は119番です。",
@@ -226,6 +278,11 @@ export const actionCards: ActionCard[] = [
     title: "連絡できないときの順番",
     summary:
       "携帯会社の障害、JAPANローミング™、00000JAPAN、公衆電話、災害用伝言171を順に確認します。",
+    steps: [
+      "契約している携帯会社の障害情報を確認する",
+      "つながらないときは00000JAPANや公衆電話を試す",
+      "家族への連絡は災害用伝言ダイヤル171に録音する",
+    ],
     action: "通信各社の公式障害情報を確認する",
     caution:
       "00000JAPANは暗号化されていません。住所、医療情報、ID、パスワード、金融情報を送らないでください。",
@@ -242,6 +299,11 @@ export const actionCards: ActionCard[] = [
     title: "移動前に道路・交通を再確認する",
     summary:
       "目的地が開いていても、道路規制や公共交通の運休で到達できない場合があります。",
+    steps: [
+      "出発前に道路規制と公共交通の運行を確認する",
+      "通行実績は「通れる保証」ではないと考える",
+      "迂回や移動の中止も選択肢に入れる",
+    ],
     action: "国土交通省の道路情報を確認する",
     caution:
       "通行実績は通行可能の保証ではありません。出発直前に道路管理者と現地の規制を優先してください。",
@@ -258,6 +320,11 @@ export const actionCards: ActionCard[] = [
     title: "片付け・修理の前に写真を残す",
     summary:
       "建物の外側4方向、各部屋の全景、被災箇所の接写を撮り、申請に必要な証拠を残します。",
+    steps: [
+      "片付けの前に、建物の外側4方向を撮影する",
+      "各部屋の全景と、被災箇所の接写を撮影する",
+      "写真は消さずに保管し、SNSへ載せない",
+    ],
     action: "熊本市のり災証明案内を確認する",
     caution:
       "表札、顔、書類番号、位置情報が写る写真をSNSや非公式業者へ渡さないでください。",
@@ -274,6 +341,11 @@ export const actionCards: ActionCard[] = [
     title: "支援制度は手続きの順番を確認する",
     summary:
       "写真、相談、見積、契約、支払いの順番を確認します。先に支払うと利用できない制度があります。",
+    steps: [
+      "支払い・契約の前に、公式窓口へ相談する",
+      "写真→相談→見積→契約の順番を守る",
+      "期限と必要書類を公式ページで確認する",
+    ],
     action: "熊本市の公式支援情報を確認する",
     caution:
       "このアプリは受給可否を判定しません。期限と必要書類を公式窓口で最終確認してください。",
@@ -285,6 +357,11 @@ export const actionCards: ActionCard[] = [
   },
 ];
 
+export const siteCheckedAt = actionCards.reduce(
+  (latest, card) => (card.checkedAt > latest ? card.checkedAt : latest),
+  actionCards[0]?.checkedAt ?? "",
+);
+
 export function formatTimestamp(value: string) {
   return new Intl.DateTimeFormat("ja-JP", {
     month: "numeric",
@@ -293,6 +370,15 @@ export function formatTimestamp(value: string) {
     minute: "2-digit",
     timeZone: "Asia/Tokyo",
   }).format(new Date(value));
+}
+
+export function formatRelativeTime(value: string, now: Date) {
+  const diffMinutes = Math.round((now.getTime() - new Date(value).getTime()) / 60000);
+  if (diffMinutes < 1) return "たった今";
+  if (diffMinutes < 60) return `約${diffMinutes}分前`;
+  const hours = Math.floor(diffMinutes / 60);
+  if (hours < 24) return `約${hours}時間前`;
+  return `約${Math.floor(hours / 24)}日前`;
 }
 
 export function isExpired(card: ActionCard, now = new Date()) {

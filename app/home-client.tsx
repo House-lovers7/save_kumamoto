@@ -4,15 +4,39 @@ import { useEffect, useMemo, useState } from "react";
 import {
   actionCards,
   categoryLabels,
+  formatRelativeTime,
   formatTimestamp,
   isExpired,
   municipalities,
+  siteCheckedAt,
   type ActionCategory,
 } from "@/lib/disaster-data";
 
 const categories = Object.keys(categoryLabels) as ActionCategory[];
-const renderedAt = new Date();
+const needCategories = categories.filter(
+  (item): item is Exclude<ActionCategory, "all"> => item !== "all",
+);
 const emergencyMode = process.env.NEXT_PUBLIC_EMERGENCY_MODE === "true";
+
+type TextScale = "standard" | "large" | "xlarge";
+
+const textScales: TextScale[] = ["standard", "large", "xlarge"];
+const textScaleLabels: Record<TextScale, string> = {
+  standard: "標準",
+  large: "大",
+  xlarge: "特大",
+};
+
+const categoryIcons: Record<Exclude<ActionCategory, "all">, string> = {
+  emergency: "報",
+  water: "水",
+  essentials: "食",
+  shelter: "避",
+  medical: "薬",
+  communication: "電",
+  transport: "道",
+  recovery: "片",
+};
 
 export function HomeClient() {
   const [municipality, setMunicipality] = useState<(typeof municipalities)[number]>(
@@ -20,29 +44,38 @@ export function HomeClient() {
   );
   const [category, setCategory] = useState<ActionCategory>("all");
   const [query, setQuery] = useState("");
-  const [largeText, setLargeText] = useState(false);
+  const [textScale, setTextScale] = useState<TextScale>("standard");
   const [offline, setOffline] = useState(false);
+  const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
     const savedArea = window.localStorage.getItem("relief-area");
-    const savedText = window.localStorage.getItem("relief-large-text");
+    const savedScale = window.localStorage.getItem("relief-text-scale");
+    const legacyLarge = window.localStorage.getItem("relief-large-text");
     queueMicrotask(() => {
       if (savedArea && municipalities.includes(savedArea as (typeof municipalities)[number])) {
         setMunicipality(savedArea as (typeof municipalities)[number]);
       }
-      setLargeText(savedText === "true");
+      if (savedScale && textScales.includes(savedScale as TextScale)) {
+        setTextScale(savedScale as TextScale);
+      } else if (legacyLarge === "true") {
+        setTextScale("large");
+        window.localStorage.setItem("relief-text-scale", "large");
+      }
       setOffline(!window.navigator.onLine);
     });
     const online = () => setOffline(false);
     const offlineHandler = () => setOffline(true);
     window.addEventListener("online", online);
     window.addEventListener("offline", offlineHandler);
+    const tick = window.setInterval(() => setNow(new Date()), 60_000);
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => undefined);
     }
     return () => {
       window.removeEventListener("online", online);
       window.removeEventListener("offline", offlineHandler);
+      window.clearInterval(tick);
     };
   }, []);
 
@@ -56,25 +89,48 @@ export function HomeClient() {
         card.areas.includes(municipality);
       const matchesQuery =
         !normalized ||
-        `${card.title} ${card.summary} ${card.action}`.toLowerCase().includes(normalized);
+        `${card.title} ${card.summary} ${card.steps.join(" ")} ${card.action}`
+          .toLowerCase()
+          .includes(normalized);
       return matchesCategory && matchesArea && matchesQuery;
     });
   }, [category, municipality, query]);
+
+  const countsByCategory = useMemo(() => {
+    const counts = new Map<ActionCategory, number>();
+    for (const card of actionCards) {
+      const matchesArea =
+        municipality === "熊本県全域" ||
+        card.areas.includes("熊本県全域") ||
+        card.areas.includes(municipality);
+      if (!matchesArea) continue;
+      counts.set(card.category, (counts.get(card.category) ?? 0) + 1);
+    }
+    return counts;
+  }, [municipality]);
 
   function changeArea(value: (typeof municipalities)[number]) {
     setMunicipality(value);
     window.localStorage.setItem("relief-area", value);
   }
 
-  function toggleText() {
-    setLargeText((current) => {
-      window.localStorage.setItem("relief-large-text", String(!current));
-      return !current;
-    });
+  function changeTextScale(scale: TextScale) {
+    setTextScale(scale);
+    window.localStorage.setItem("relief-text-scale", scale);
+  }
+
+  function selectNeed(item: ActionCategory) {
+    setCategory(item);
+    document.getElementById("actions")?.scrollIntoView({ block: "start" });
+  }
+
+  function resetFilters() {
+    setCategory("all");
+    setQuery("");
   }
 
   return (
-    <main className={largeText ? "app app--large" : "app"}>
+    <main className={`app app--text-${textScale}`}>
       <a className="skip-link" href="#actions">
         困りごとの一覧へ移動
       </a>
@@ -82,8 +138,12 @@ export function HomeClient() {
       <div className="emergency-strip" role="region" aria-label="緊急連絡">
         <span>命の危険・火災・救急</span>
         <div>
-          <a href="tel:119">119</a>
-          <a href="tel:110">警察 110</a>
+          <a href="tel:119">
+            <strong>119</strong>消防・救急
+          </a>
+          <a href="tel:110">
+            <strong>110</strong>警察
+          </a>
         </div>
       </div>
 
@@ -97,10 +157,20 @@ export function HomeClient() {
             <h1>くまもと<br />いまどうするナビ</h1>
           </div>
         </div>
-        <button className="text-toggle" type="button" onClick={toggleText} aria-pressed={largeText}>
-          <span aria-hidden="true">あ</span>
-          {largeText ? "標準の文字" : "文字を大きく"}
-        </button>
+        <div className="text-size-control" role="group" aria-label="文字の大きさ">
+          <span aria-hidden="true">文字</span>
+          {textScales.map((scale) => (
+            <button
+              key={scale}
+              type="button"
+              className={textScale === scale ? "is-active" : ""}
+              aria-pressed={textScale === scale}
+              onClick={() => changeTextScale(scale)}
+            >
+              {textScaleLabels[scale]}
+            </button>
+          ))}
+        </div>
       </header>
 
       {emergencyMode && (
@@ -114,7 +184,8 @@ export function HomeClient() {
 
       {offline && (
         <div className="offline-notice" role="status">
-          オフラインです。端末に保存済みの内容を表示しています。外部の公式ページは開けません。
+          オフラインです。保存済みの案内を表示しています。外部の公式ページは開けませんが、
+          「まずやること」の手順と電話（119・110・171）は使えます。
         </div>
       )}
 
@@ -127,11 +198,31 @@ export function HomeClient() {
           <span className="freshness-panel__signal" aria-hidden="true" />
           <div>
             <strong>公式サイトの接続を確認</strong>
-          <time dateTime="2026-07-30T09:35:00+09:00">7月30日 09:35</time>
+            <time dateTime={siteCheckedAt} suppressHydrationWarning>
+              {formatRelativeTime(siteCheckedAt, now)}（{formatTimestamp(siteCheckedAt)}）
+            </time>
           </div>
           <p>状況は変わる可能性があります。各リンク先の発表時刻を確認してください。</p>
         </div>
       </section>
+
+      <nav className="need-grid" aria-label="困りごとから選ぶ">
+        {needCategories.map((item) => (
+          <button
+            key={item}
+            type="button"
+            className={category === item ? "is-active" : ""}
+            aria-pressed={category === item}
+            onClick={() => selectNeed(item)}
+          >
+            <span className="need-grid__icon" aria-hidden="true">
+              {categoryIcons[item]}
+            </span>
+            <span className="need-grid__label">{categoryLabels[item]}</span>
+            <span className="need-grid__count">{countsByCategory.get(item) ?? 0}件</span>
+          </button>
+        ))}
+      </nav>
 
       <section className="controls" aria-label="表示する情報を選ぶ">
         <label>
@@ -153,77 +244,126 @@ export function HomeClient() {
         </label>
       </section>
 
-      <nav className="category-nav" aria-label="困りごとの種類">
-        {categories.map((item) => (
-          <button
-            type="button"
-            key={item}
-            className={category === item ? "is-active" : ""}
-            aria-pressed={category === item}
-            onClick={() => setCategory(item)}
-          >
-            {categoryLabels[item]}
-          </button>
-        ))}
-      </nav>
-
       {!emergencyMode && <section id="actions" className="action-section" aria-live="polite">
         <div className="section-heading">
           <h2>{municipality}で確認すること</h2>
           <span>{filtered.length}件</span>
         </div>
+        <div className="category-nav-wrap">
+          <nav className="category-nav" aria-label="困りごとの種類">
+            {categories.map((item) => (
+              <button
+                type="button"
+                key={item}
+                className={category === item ? "is-active" : ""}
+                aria-pressed={category === item}
+                onClick={() => setCategory(item)}
+              >
+                {categoryLabels[item]}
+              </button>
+            ))}
+          </nav>
+        </div>
         {filtered.length > 0 ? (
           <div className="action-list">
-            {filtered.map((card) => (
-              <article className="action-card" key={card.id}>
-                <div className="action-card__icon" aria-hidden="true">{card.icon}</div>
-                <div className="action-card__body">
-                  <div className="action-card__meta">
-                    <span>{categoryLabels[card.category]}</span>
-                    {card.offline && <span>オフライン保存</span>}
-                    <span>公式情報</span>
-                    {isExpired(card, renderedAt) && <span className="is-expired">期限切れ</span>}
-                  </div>
-                  <h3>{card.title}</h3>
-                  {isExpired(card, renderedAt) ? (
-                    <div className="expired-message" role="status">
-                      <strong>現在の状況は確認できません</strong>
-                      <p>
-                        保存情報の有効期限を過ぎています。移動や申込みの前に、公式サイトで最新情報を確認してください。
-                      </p>
+            {filtered.map((card) => {
+              const expired = isExpired(card, now);
+              return (
+                <article className="action-card" key={card.id}>
+                  <div className="action-card__icon" aria-hidden="true">{card.icon}</div>
+                  <div className="action-card__body">
+                    <div className="action-card__meta">
+                      <span>{categoryLabels[card.category]}</span>
+                      {card.offline && <span>オフライン保存</span>}
+                      <span>公式情報</span>
+                      {expired && <span className="is-expired" suppressHydrationWarning>期限切れ</span>}
                     </div>
-                  ) : (
-                    <p>{card.summary}</p>
-                  )}
-                  <div className="caution">
-                    <strong>注意</strong>
-                    <p>{card.caution}</p>
+                    <h3>{card.title}</h3>
+                    {expired ? (
+                      <div className="expired-message" role="status" suppressHydrationWarning>
+                        <strong>現在の状況は確認できません</strong>
+                        <p>
+                          保存情報の有効期限（{formatTimestamp(card.expiresAt)}）を過ぎています。
+                          下の基本手順は使えますが、場所・時間などの最新状況は必ず公式サイトで確認してください。
+                        </p>
+                      </div>
+                    ) : (
+                      <p>{card.summary}</p>
+                    )}
+                    <div className="steps">
+                      <strong className="steps__title">まずやること</strong>
+                      <ol>
+                        {card.steps.map((step) => (
+                          <li key={step}>{step}</li>
+                        ))}
+                      </ol>
+                    </div>
+                    <div className="caution">
+                      <strong>注意</strong>
+                      <p>{card.caution}</p>
+                    </div>
+                    <div className="source-summary" suppressHydrationWarning>
+                      <span className={expired ? "source-summary__status is-expired" : "source-summary__status"}>
+                        {expired
+                          ? `有効期限切れ（${formatTimestamp(card.expiresAt)}）`
+                          : `有効期限 ${formatTimestamp(card.expiresAt)}まで`}
+                      </span>
+                      <span>接続確認 {formatRelativeTime(card.checkedAt, now)}</span>
+                    </div>
+                    <details className="source-details">
+                      <summary>出典と時刻の詳細</summary>
+                      <dl>
+                        <div>
+                          <dt>出典</dt>
+                          <dd>{card.sourceName}</dd>
+                        </div>
+                        <div>
+                          <dt>案内更新</dt>
+                          <dd>{formatTimestamp(card.publishedAt)}</dd>
+                        </div>
+                        <div>
+                          <dt>取得</dt>
+                          <dd>{formatTimestamp(card.fetchedAt)}</dd>
+                        </div>
+                        <div>
+                          <dt>接続確認</dt>
+                          <dd>{formatTimestamp(card.checkedAt)}</dd>
+                        </div>
+                        <div>
+                          <dt>有効期限</dt>
+                          <dd>{formatTimestamp(card.expiresAt)}</dd>
+                        </div>
+                      </dl>
+                    </details>
+                    {offline ? (
+                      <div className="primary-link primary-link--disabled" aria-disabled="true">
+                        <span>{card.action}</span>
+                        <span className="primary-link__note">オフラインのため開けません</span>
+                      </div>
+                    ) : (
+                      <a
+                        className="primary-link"
+                        href={card.sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`${card.action}（外部の公式サイト）`}
+                      >
+                        {card.action}
+                        <span aria-hidden="true">↗</span>
+                      </a>
+                    )}
                   </div>
-                  <div className="source-row">
-                    <span>出典：{card.sourceName}</span>
-                    <span>案内更新：{formatTimestamp(card.publishedAt)}</span>
-                    <span>取得：{formatTimestamp(card.fetchedAt)}</span>
-                    <span>接続確認：{formatTimestamp(card.checkedAt)}</span>
-                    <span>有効期限：{formatTimestamp(card.expiresAt)}</span>
-                  </div>
-                  <a
-                    className="primary-link"
-                    href={card.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={`${card.action}（外部の公式サイト）`}
-                  >
-                    {card.action}
-                    <span aria-hidden="true">↗</span>
-                  </a>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         ) : (
           <div className="empty-state">
             <strong>一致する情報がありません</strong>
             <p>市町村・カテゴリ・キーワードを変えてください。</p>
+            <button type="button" className="empty-state__reset" onClick={resetFilters}>
+              条件をリセットしてすべて表示
+            </button>
           </div>
         )}
       </section>}

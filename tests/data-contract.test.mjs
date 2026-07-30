@@ -36,6 +36,21 @@ test("全カードが出典・時刻・失効・公式URLを持つ", () => {
   }
 });
 
+test("全カードが断定しない行動順序ステップを持つ", () => {
+  for (const card of actionCards) {
+    assert.ok(Array.isArray(card.steps), card.id);
+    assert.ok(card.steps.length >= 2 && card.steps.length <= 5, `${card.id}: 2〜5手順`);
+    for (const step of card.steps) {
+      assert.ok(step.trim().length >= 5 && step.length <= 60, `${card.id}: ${step}`);
+      assert.doesNotMatch(
+        step,
+        /(必ず(開|使え|入れ|もらえ|通れ)|絶対に安全|在庫あり|営業中です|通行できます|受け入れています)/,
+        `${card.id}: 断定表現を含めない`,
+      );
+    }
+  }
+});
+
 test("R1必須カテゴリをすべて備える", () => {
   const actual = new Set(actionCards.map((card) => card.category));
   for (const category of requiredCategories) {

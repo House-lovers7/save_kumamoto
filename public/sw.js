@@ -1,4 +1,4 @@
-const CACHE = "kumamoto-action-v1";
+const CACHE = "kumamoto-action-v2";
 const SHELL = ["/", "/manifest.webmanifest", "/favicon.svg"];
 
 self.addEventListener("install", (event) => {

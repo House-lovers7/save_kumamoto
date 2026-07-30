@@ -36,6 +36,10 @@ test("災害行動ナビをサーバーレンダリングする", async () => {
   assert.match(html, /あなたの居場所を集めません/);
   assert.match(html, /有効期限/);
   assert.match(html, /食料・生活/);
+  assert.match(html, /まずやること/);
+  assert.match(html, /困りごとから選ぶ/);
+  assert.match(html, /出典と時刻の詳細/);
+  assert.match(html, /文字の大きさ/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });
 
