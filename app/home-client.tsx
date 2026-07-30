@@ -81,7 +81,7 @@ export function HomeClient() {
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    return actionCards.filter((card) => {
+    const matched = actionCards.filter((card) => {
       const matchesCategory = category === "all" || card.category === category;
       const matchesArea =
         municipality === "熊本県全域" ||
@@ -89,11 +89,24 @@ export function HomeClient() {
         card.areas.includes(municipality);
       const matchesQuery =
         !normalized ||
-        `${card.title} ${card.summary} ${card.steps.join(" ")} ${card.action}`
+        `${card.title} ${card.summary} ${card.steps.join(" ")} ${card.action} ${card.keywords.join(" ")}`
           .toLowerCase()
           .includes(normalized);
       return matchesCategory && matchesArea && matchesQuery;
     });
+    if (!normalized) return matched;
+    // 検索時は、その困りごと自体を扱うカードを先に出す。
+    // 「薬」で高齢者向けカードが先に出たり、「ペット」が本文の「ペットボトル」に
+    // 反応して給水カードが避難所より上に来たりするのを防ぐ。
+    const rank = (card: (typeof actionCards)[number]) => {
+      if (card.title.toLowerCase().includes(normalized)) return 0;
+      if (card.keywords.some((word) => word.toLowerCase().includes(normalized))) return 1;
+      return 2;
+    };
+    return matched
+      .map((card, index) => ({ card, index }))
+      .sort((a, b) => rank(a.card) - rank(b.card) || a.index - b.index)
+      .map((entry) => entry.card);
   }, [category, municipality, query]);
 
   const countsByCategory = useMemo(() => {
@@ -108,6 +121,30 @@ export function HomeClient() {
     }
     return counts;
   }, [municipality]);
+
+  // 保存情報が古くなったら見た目も変える。全部期限切れなのに緑の信号を出さない。
+  const freshness = useMemo(() => {
+    const expired = actionCards.filter((card) => isExpired(card, now)).length;
+    if (expired === 0) {
+      return {
+        tone: "fresh" as const,
+        headline: "公式サイトの接続を確認",
+        note: "状況は変わる可能性があります。各リンク先の発表時刻を確認してください。",
+      };
+    }
+    if (expired === actionCards.length) {
+      return {
+        tone: "stale" as const,
+        headline: "保存した情報の期限が切れています",
+        note: "下の手順は使えますが、場所・時間などの最新の状況は必ず公式サイトで確認してください。",
+      };
+    }
+    return {
+      tone: "mixed" as const,
+      headline: `一部の情報が期限切れです（${expired}／${actionCards.length}件）`,
+      note: "期限切れの案内は「期限切れ」と表示しています。最新の状況は公式サイトで確認してください。",
+    };
+  }, [now]);
 
   function changeArea(value: (typeof municipalities)[number]) {
     setMunicipality(value);
@@ -194,15 +231,19 @@ export function HomeClient() {
           <p className="eyebrow">令和8年熊本地震・生活支援</p>
           <h2 id="hero-title">いま、一番<br />困っていることは？</h2>
         </div>
-        <div className="freshness-panel">
+        <div
+          className={`freshness-panel freshness-panel--${freshness.tone}`}
+          role="status"
+          suppressHydrationWarning
+        >
           <span className="freshness-panel__signal" aria-hidden="true" />
           <div>
-            <strong>公式サイトの接続を確認</strong>
+            <strong>{freshness.headline}</strong>
             <time dateTime={siteCheckedAt} suppressHydrationWarning>
-              {formatRelativeTime(siteCheckedAt, now)}（{formatTimestamp(siteCheckedAt)}）
+              接続確認 {formatRelativeTime(siteCheckedAt, now)}（{formatTimestamp(siteCheckedAt)}）
             </time>
           </div>
-          <p>状況は変わる可能性があります。各リンク先の発表時刻を確認してください。</p>
+          <p>{freshness.note}</p>
         </div>
       </section>
 

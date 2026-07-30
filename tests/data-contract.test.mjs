@@ -51,6 +51,45 @@ test("全カードが断定しない行動順序ステップを持つ", () => {
   }
 });
 
+test("困りごとのかな・話し言葉から該当カードへ届く", () => {
+  const search = (word) => {
+    const q = word.toLowerCase();
+    return actionCards.filter((card) =>
+      `${card.title} ${card.summary} ${card.steps.join(" ")} ${card.action} ${card.keywords.join(" ")}`
+        .toLowerCase()
+        .includes(q),
+    );
+  };
+  const expectations = [
+    ["こども", "infant-care"],
+    ["赤ちゃん", "infant-care"],
+    ["おむつ", "infant-care"],
+    ["くすり", "medical"],
+    ["けが", "medical"],
+    ["みず", "water"],
+    ["断水", "water"],
+    ["ひなん", "shelter"],
+    ["ペット", "shelter"],
+    ["ごはん", "food-and-supplies"],
+    ["ガソリン", "fuel"],
+    ["といれ", "toilet"],
+    ["充電", "communication"],
+    ["安否", "communication"],
+    ["お年寄り", "elder-care"],
+    ["通行止め", "roads"],
+    ["罹災", "kumamoto-city-hub"],
+    ["お金", "support-systems"],
+  ];
+  for (const [word, expectedId] of expectations) {
+    const hits = search(word);
+    assert.ok(hits.length > 0, `「${word}」で0件`);
+    assert.ok(
+      hits.some((card) => card.id === expectedId),
+      `「${word}」で ${expectedId} に届かない（${hits.map((c) => c.id).join(",")}）`,
+    );
+  }
+});
+
 test("R1必須カテゴリをすべて備える", () => {
   const actual = new Set(actionCards.map((card) => card.category));
   for (const category of requiredCategories) {

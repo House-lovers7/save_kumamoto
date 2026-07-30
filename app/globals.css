@@ -334,6 +334,21 @@ summary {
   box-shadow: 0 0 0 7px rgb(92 226 170 / 12%);
 }
 
+.freshness-panel--mixed .freshness-panel__signal {
+  background: #f3c14b;
+  box-shadow: 0 0 0 7px rgb(243 193 75 / 14%);
+}
+
+.freshness-panel--stale .freshness-panel__signal {
+  background: #f0836f;
+  box-shadow: 0 0 0 7px rgb(240 131 111 / 16%);
+}
+
+.freshness-panel--stale {
+  background: rgb(240 131 111 / 14%);
+  border-color: rgb(240 131 111 / 42%);
+}
+
 .freshness-panel strong {
   display: inline;
 }
@@ -665,9 +680,10 @@ footer {
 }
 
 .source-details summary {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   padding: 6px 2px;
-  min-height: 32px;
+  min-height: 44px;
   font-weight: 800;
   cursor: pointer;
   text-decoration: underline;
@@ -872,16 +888,34 @@ footer a {
     font-size: 0.8em;
   }
 
+  /* 被災直後に開く画面。ヒーローを詰めて、困りごとボタンを1画面目に載せる。 */
   .hero {
     grid-template-columns: 1fr;
     min-height: auto;
-    gap: 36px;
-    padding: 38px 26px 28px;
-    border-radius: 8px 8px 32px 8px;
+    gap: 18px;
+    margin-bottom: 16px;
+    padding: 22px 22px 24px;
+    border-radius: 8px 8px 26px 8px;
   }
 
   .hero h2 {
-    font-size: clamp(2.5em, 14vw, 4em);
+    font-size: clamp(2em, 10.5vw, 3em);
+  }
+
+  .hero::after {
+    font-size: clamp(150px, 42vw, 220px);
+  }
+
+  .freshness-panel {
+    padding: 14px 16px;
+  }
+
+  .freshness-panel p {
+    margin-top: 10px;
+  }
+
+  .site-header {
+    padding: 14px 0;
   }
 
   .need-grid {
