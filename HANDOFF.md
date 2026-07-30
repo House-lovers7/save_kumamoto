@@ -1,5 +1,14 @@
 # Fresh-thread handoff（2026-07-31 更新／ネイティブ反映後）
 
+## Goal
+
+熊本の被災者が「いま何に困っているか」から公式情報へ最短で到達できる読み取り専用アプリ（R1）を、
+Web とネイティブで同じ品質・同じ内容で提供する。情報がないときに「利用可能」と推測せず、
+鮮度と失効を正直に出すことを最優先の品質基準とする。
+
+本セッションのGoalは「Webで完了済みの被災者視点UI/UX改修を apps/mobile へ反映し、
+カードデータの二重管理を解消する」で、これは完了している。
+
 ## 現状
 
 被災者視点のUI/UX改修は **Web・ネイティブ両方に反映済み**。カードデータの二重管理も解消した。
@@ -33,6 +42,29 @@ remote未設定のリポジトリなので、push先自体が存在しない。
 2. 期限切れカードが summary を隠すだけで行動手順を出していなかった（決定事項2に反する）
 3. `renderedAt` をモジュール読込時の定数で保持しており、起動しっぱなしだと失効判定が更新されなかった
 
+## Files（本セッションで触ったもの）
+
+新規:
+
+- `scripts/generate-mobile-data.mjs`：正典 → ネイティブ版データの生成
+- `apps/mobile/src/theme.ts`：Web の globals.css と同じ配色トークン・文字倍率・鮮度シグナル色
+- `tests/mobile-parity.test.mjs`：Web/ネイティブ整合の機械ゲート
+
+変更:
+
+- `apps/mobile/src/app/index.tsx`：全面改修（鮮度3トーン / steps常時表示 / 60秒tick /
+  キーワード検索＋関連度順 / need grid / 文字3段階 / ダークモード / 空状態）
+- `apps/mobile/src/data/actions.ts`：**生成物になった**（直接編集しない）
+- `apps/mobile/src/app/_layout.tsx` / `about.tsx` / `offline-guides.tsx`：テーマ連動
+- `apps/mobile/app.json`：`userInterfaceStyle` を `light` → `automatic`
+- `package.json`：`gen:mobile-data` スクリプト追加
+- `README.md` / `HANDOFF.md`
+
+触っていない（意図的）:
+
+- `lib/disaster-data.ts` の内容（正典として読むだけ。タイムスタンプ値も未更新＝決定事項4）
+- `app/`（Web UI）、依存パッケージ（追加ゼロ）
+
 ## 検証結果
 
 - Web: lint 成功 / `npm test` 13件成功（既存5＋整合5＋SSR3）
@@ -58,9 +90,37 @@ remote未設定のリポジトリなので、push先自体が存在しない。
 - 全カードが期限切れのままなので、公開するなら先に公式情報と時刻の更新が必要
   （`lib/disaster-data.ts` を更新して `npm run gen:mobile-data` を実行する）
 
+## Verification（次セッションで最初に流すコマンド）
+
+```bash
+cd /Users/tg/projects/app_development/save_kumamoto
+npm run lint            # tsc --noEmit（Web）
+npm test                # build + 13件（既存5 / 整合5 / SSR3）
+npm run gen:mobile-data && git diff --stat   # 差分が出たら正典と生成物がずれている
+
+cd apps/mobile
+npm run typecheck
+npm run lint
+npm run export:all      # iOS/Android バンドル（署名なし）
+```
+
+未実行のまま残しているもの（承認・環境が要る）:
+
+```bash
+cd apps/mobile
+npx expo-doctor@latest      # 外部からのCLI取得を伴う
+npm audit --omit=dev
+```
+
 ## Acceptance
 
 Web・ネイティブ両方のUI/UX改修は完了。判定は `implementation_complete_boundary_unverified`
 （コードとローカル検査は通っているが、実機・実配信の証拠はない）。
-次に進むなら実機検証か、公開前の運用課題（No-Go 5項目）。
-deploy / push / メールはユーザー明示承認後のみ。
+
+次セッションの選択肢は次の3つ。どれもこのhandoffだけで着手できる。
+
+1. 実機・Simulator検証（No-Go #4）— Expo Go 57.0.5 取得停滞の境界を解く必要がある
+2. 公開前の運用課題（No-Go 1〜5）— #1（公式情報の再確認と時刻更新）は外部通信の承認が要る
+3. Playwright QAスクリプトの恒久化 — 依存追加の承認が要る
+
+deploy / push / メールはユーザー明示承認後のみ。remote未設定のためpush先は存在しない。
