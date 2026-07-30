@@ -104,7 +104,16 @@ npx eas-cli build --platform android --profile production
 
 ## 情報更新と失効
 
-公開前に、`lib/disaster-data.ts` と `apps/mobile/src/data/actions.ts` の各カードについて、公式ページを再確認します。
+公開前に、`lib/disaster-data.ts` の各カードについて、公式ページを再確認します。
+
+カード内容の正典は `lib/disaster-data.ts` の1か所だけです。ネイティブ版の
+`apps/mobile/src/data/actions.ts` は自動生成物なので、直接編集しません。
+
+```bash
+npm run gen:mobile-data
+```
+
+正典を編集して再生成し忘れると `npm test` が失敗します。
 
 各カードには次が必須です。
 
@@ -160,12 +169,30 @@ R1にはDB、認証、投稿API、個人情報保存、外部分析SDKがあり�
 
 実ブラウザQAで検出し修正した不具合：鮮度シグナルが全件期限切れでも緑のまま／「薬」検索で医療カードが2番目に沈む／「こども」「くすり」等のかな検索が0件／ヒーローがモバイル初画面を占有／出典詳細のタップ領域39px。
 - WebクライアントJS/CSSのgzip合計：約101KB（初期150KB上限内）
+
+2026年7月31日時点（ネイティブ版へのUI/UX反映後）：
+
 - Mobile TypeScript検査：成功
 - Mobile lint：成功
-- Expo Doctor：20/20
-- iOS bundle export：成功
-- Android bundle export：成功
-- Mobile監査：Critical/High 0件、Expoビルドツール経由のModerate 11件
+- iOS bundle export：成功（Hermes 2.4MB）
+- Android bundle export：成功（Hermes 2.7MB）
+- Web/ネイティブ整合テスト：5件成功（生成物一致、再生成忘れ検出、かな検索到達性、失効境界）
+  - 「再生成忘れ検出」は生成物を手編集した状態で実際に失敗することを確認済み
+- react-native-web静的レンダリングによる描画確認：15項目
+  - 全14カードが期限切れの状態で、鮮度表示が「保存した情報の期限が切れています」＋赤系シグナルへ切り替わる
+  - 期限切れの14カードすべてが「まずやること」の手順を表示し続ける
+  - 接続確認が固定文字列ではなく相対時刻（約21時間前）で出る
+  - 困りごとグリッド8種、キーワード検索、文字3段階、支援制度カード、市町村7件を確認
+
+ネイティブ版で反映した内容：行動順序ステップ、かな検索と関連度順、実データ連動の鮮度表示、
+困りごとグリッド、文字3段階、ダークモード、支援制度カード（Webと同じ14件）。
+カードデータはWebの `lib/disaster-data.ts` から生成する方式へ変更し、二重管理をやめました。
+
+ネイティブ版で修正した不具合：鮮度シグナルが全件期限切れでも緑＋固定時刻のまま／期限切れカードに
+行動手順が出ない／起動時刻を定数で保持していたため開いたままだと失効判定が更新されない。
+
+- Expo Doctor：20/20（2026年7月30日時点。反映後は未再実行）
+- Mobile監査：Critical/High 0件、Expoビルドツール経由のModerate 11件（2026年7月30日時点）
 
 ## 公開前に残る課題（No-Go）
 
@@ -182,6 +209,10 @@ R1にはDB、認証、投稿API、個人情報保存、外部分析SDKがあり�
 4. ネイティブ実機・署名境界
    - iOS実機、Android実機、VoiceOver/TalkBackでの確認は未実施。
    - iOS Simulator起動は、Expo Go 57.0.5の取得が8%で停滞したため中止。Android Simulatorは同じ開発クライアント境界が未解決のため未起動。
+   - 描画確認はreact-native-webの静的レンダリングまで。ネイティブのレイアウト、
+     ダークモードの実切替（`userInterfaceStyle: automatic`）、44pxタップ領域、
+     文字特大時の折り返しは実機でのみ確認できる。
+   - Expo Doctorと`npm audit --omit=dev`は、UI/UX反映後に再実行していない。
    - Apple/Googleの署名済みストア成果物と審査は未検証。
 5. 配信境界
    - 本番URLのCDN性能、低速回線、オフライン再起動、ロールバックは未検証。
@@ -191,7 +222,7 @@ R1にはDB、認証、投稿API、個人情報保存、外部分析SDKがあり�
 
 ## リリース手順
 
-1. 公式情報と全時刻を更新する。
+1. `lib/disaster-data.ts` の公式情報と全時刻を更新し、`npm run gen:mobile-data` を実行する。
 2. `npm run lint && npm test && npm audit` を実行する。
 3. Mobileでtypecheck、lint、Expo Doctor、両platform exportを実行する。
 4. ステージングURLを実機・低速回線・オフラインで確認する。
@@ -203,12 +234,14 @@ R1にはDB、認証、投稿API、個人情報保存、外部分析SDKがあり�
 
 ## 主なファイル
 
+- `lib/disaster-data.ts`：**カード内容の正典**（公式導線・鮮度・失効）。WebとネイティブはここだけがSSoT
+- `scripts/generate-mobile-data.mjs`：正典からネイティブ版データを生成する
 - `app/home-client.tsx`：Web UIと絞り込み
-- `lib/disaster-data.ts`：Webの公式導線・鮮度・失効
 - `public/sw.js`：PWAキャッシュ
 - `app/status/page.tsx`：運用ステータス
-- `tests/`：レンダリング・情報契約・安全境界テスト
+- `tests/`：レンダリング・情報契約・Web/ネイティブ整合・安全境界テスト
 - `apps/mobile/src/app/`：iOS/Android画面
-- `apps/mobile/src/data/actions.ts`：ネイティブ版データ
+- `apps/mobile/src/data/actions.ts`：**自動生成物**（直接編集しない）
+- `apps/mobile/src/theme.ts`：Webと共通の配色トークン・文字倍率
 - `apps/mobile/app.json`：bundle identifier / package設定
 - `apps/mobile/eas.json`：EAS build profile
