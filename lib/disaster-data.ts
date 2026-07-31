@@ -55,7 +55,17 @@ export const categoryLabels: Record<ActionCategory, string> = {
   recovery: "片付け・制度",
 };
 
+/** 2026-07-31 の公式ページ再確認（15:01/15:09 JST）で掲載継続を確認した13カード分。期限は確認から24時間。 */
 const contentTimes = {
+  publishedAt: "2026-07-30T09:35:00+09:00",
+  fetchedAt: "2026-07-31T15:01:00+09:00",
+  checkedAt: "2026-07-31T15:01:00+09:00",
+  expiresAt: "2026-08-01T15:01:00+09:00",
+  sourceStatus: "official" as const,
+};
+
+/** medical 専用。2026-07-31 の再確認で県トップが緊急災害用ページに差し替わっており医療導線を確認できなかったため、鮮度を更新していない（失効表示を維持する）。 */
+const staleMedicalTimes = {
   publishedAt: "2026-07-30T09:35:00+09:00",
   fetchedAt: "2026-07-30T09:35:00+09:00",
   checkedAt: "2026-07-30T09:35:00+09:00",
@@ -279,7 +289,7 @@ export const actionCards: ActionCard[] = [
       "このアプリは診断や受入可否を判定しません。重い症状や命の危険がある場合は119番です。",
     sourceName: "熊本県",
     sourceUrl: "https://www.pref.kumamoto.jp/",
-    ...contentTimes,
+    ...staleMedicalTimes,
     areas: ["熊本県全域"],
     offline: true,
   },

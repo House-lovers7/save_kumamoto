@@ -88,9 +88,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本県 防災推進課",
     "sourceUrl": "https://www.pref.kumamoto.jp/soshiki/222/",
     "publishedAt": "2026-07-30T09:35:00+09:00",
-    "fetchedAt": "2026-07-30T09:35:00+09:00",
-    "checkedAt": "2026-07-30T09:35:00+09:00",
-    "expiresAt": "2026-07-30T13:35:00+09:00",
+    "fetchedAt": "2026-07-31T15:01:00+09:00",
+    "checkedAt": "2026-07-31T15:01:00+09:00",
+    "expiresAt": "2026-08-01T15:01:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -124,9 +124,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本市",
     "sourceUrl": "https://www.city.kumamoto.jp/list04828.html",
     "publishedAt": "2026-07-30T09:35:00+09:00",
-    "fetchedAt": "2026-07-30T09:35:00+09:00",
-    "checkedAt": "2026-07-30T09:35:00+09:00",
-    "expiresAt": "2026-07-30T13:35:00+09:00",
+    "fetchedAt": "2026-07-31T15:01:00+09:00",
+    "checkedAt": "2026-07-31T15:01:00+09:00",
+    "expiresAt": "2026-08-01T15:01:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本市"
@@ -161,9 +161,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本県・各市町村公式情報",
     "sourceUrl": "https://www.pref.kumamoto.jp/soshiki/222/",
     "publishedAt": "2026-07-30T09:35:00+09:00",
-    "fetchedAt": "2026-07-30T09:35:00+09:00",
-    "checkedAt": "2026-07-30T09:35:00+09:00",
-    "expiresAt": "2026-07-30T13:35:00+09:00",
+    "fetchedAt": "2026-07-31T15:01:00+09:00",
+    "checkedAt": "2026-07-31T15:01:00+09:00",
+    "expiresAt": "2026-08-01T15:01:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域",
@@ -206,9 +206,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本県・各市町村公式情報",
     "sourceUrl": "https://www.pref.kumamoto.jp/soshiki/222/",
     "publishedAt": "2026-07-30T09:35:00+09:00",
-    "fetchedAt": "2026-07-30T09:35:00+09:00",
-    "checkedAt": "2026-07-30T09:35:00+09:00",
-    "expiresAt": "2026-07-30T13:35:00+09:00",
+    "fetchedAt": "2026-07-31T15:01:00+09:00",
+    "checkedAt": "2026-07-31T15:01:00+09:00",
+    "expiresAt": "2026-08-01T15:01:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -243,9 +243,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本県・事業者公式情報",
     "sourceUrl": "https://www.pref.kumamoto.jp/soshiki/222/",
     "publishedAt": "2026-07-30T09:35:00+09:00",
-    "fetchedAt": "2026-07-30T09:35:00+09:00",
-    "checkedAt": "2026-07-30T09:35:00+09:00",
-    "expiresAt": "2026-07-30T13:35:00+09:00",
+    "fetchedAt": "2026-07-31T15:01:00+09:00",
+    "checkedAt": "2026-07-31T15:01:00+09:00",
+    "expiresAt": "2026-08-01T15:01:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -280,9 +280,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本県・各市町村公式情報",
     "sourceUrl": "https://www.pref.kumamoto.jp/soshiki/222/",
     "publishedAt": "2026-07-30T09:35:00+09:00",
-    "fetchedAt": "2026-07-30T09:35:00+09:00",
-    "checkedAt": "2026-07-30T09:35:00+09:00",
-    "expiresAt": "2026-07-30T13:35:00+09:00",
+    "fetchedAt": "2026-07-31T15:01:00+09:00",
+    "checkedAt": "2026-07-31T15:01:00+09:00",
+    "expiresAt": "2026-08-01T15:01:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -323,9 +323,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本県・各市町村公式情報",
     "sourceUrl": "https://www.pref.kumamoto.jp/soshiki/222/",
     "publishedAt": "2026-07-30T09:35:00+09:00",
-    "fetchedAt": "2026-07-30T09:35:00+09:00",
-    "checkedAt": "2026-07-30T09:35:00+09:00",
-    "expiresAt": "2026-07-30T13:35:00+09:00",
+    "fetchedAt": "2026-07-31T15:01:00+09:00",
+    "checkedAt": "2026-07-31T15:01:00+09:00",
+    "expiresAt": "2026-08-01T15:01:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -365,9 +365,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本県・各市町村公式情報",
     "sourceUrl": "https://www.pref.kumamoto.jp/soshiki/222/",
     "publishedAt": "2026-07-30T09:35:00+09:00",
-    "fetchedAt": "2026-07-30T09:35:00+09:00",
-    "checkedAt": "2026-07-30T09:35:00+09:00",
-    "expiresAt": "2026-07-30T13:35:00+09:00",
+    "fetchedAt": "2026-07-31T15:01:00+09:00",
+    "checkedAt": "2026-07-31T15:01:00+09:00",
+    "expiresAt": "2026-08-01T15:01:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -405,9 +405,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本市 防災サイト",
     "sourceUrl": "https://www.city.kumamoto.jp/default.html",
     "publishedAt": "2026-07-30T09:35:00+09:00",
-    "fetchedAt": "2026-07-30T09:35:00+09:00",
-    "checkedAt": "2026-07-30T09:35:00+09:00",
-    "expiresAt": "2026-07-30T13:35:00+09:00",
+    "fetchedAt": "2026-07-31T15:01:00+09:00",
+    "checkedAt": "2026-07-31T15:01:00+09:00",
+    "expiresAt": "2026-08-01T15:01:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本市"
@@ -500,9 +500,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "電気通信事業者協会（TCA）・通信各社",
     "sourceUrl": "https://www.tca.or.jp/information/japan-roaming.html",
     "publishedAt": "2026-07-30T09:35:00+09:00",
-    "fetchedAt": "2026-07-30T09:35:00+09:00",
-    "checkedAt": "2026-07-30T09:35:00+09:00",
-    "expiresAt": "2026-07-30T13:35:00+09:00",
+    "fetchedAt": "2026-07-31T15:01:00+09:00",
+    "checkedAt": "2026-07-31T15:01:00+09:00",
+    "expiresAt": "2026-08-01T15:01:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -541,9 +541,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "国土交通省 九州地方整備局",
     "sourceUrl": "https://www.qsr.mlit.go.jp/",
     "publishedAt": "2026-07-30T09:35:00+09:00",
-    "fetchedAt": "2026-07-30T09:35:00+09:00",
-    "checkedAt": "2026-07-30T09:35:00+09:00",
-    "expiresAt": "2026-07-30T13:35:00+09:00",
+    "fetchedAt": "2026-07-31T15:01:00+09:00",
+    "checkedAt": "2026-07-31T15:01:00+09:00",
+    "expiresAt": "2026-08-01T15:01:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -584,9 +584,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本市",
     "sourceUrl": "https://www.city.kumamoto.jp/list04828.html",
     "publishedAt": "2026-07-30T09:35:00+09:00",
-    "fetchedAt": "2026-07-30T09:35:00+09:00",
-    "checkedAt": "2026-07-30T09:35:00+09:00",
-    "expiresAt": "2026-07-30T13:35:00+09:00",
+    "fetchedAt": "2026-07-31T15:01:00+09:00",
+    "checkedAt": "2026-07-31T15:01:00+09:00",
+    "expiresAt": "2026-08-01T15:01:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本市"
@@ -629,9 +629,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本市",
     "sourceUrl": "https://www.city.kumamoto.jp/list04828.html",
     "publishedAt": "2026-07-30T09:35:00+09:00",
-    "fetchedAt": "2026-07-30T09:35:00+09:00",
-    "checkedAt": "2026-07-30T09:35:00+09:00",
-    "expiresAt": "2026-07-30T13:35:00+09:00",
+    "fetchedAt": "2026-07-31T15:01:00+09:00",
+    "checkedAt": "2026-07-31T15:01:00+09:00",
+    "expiresAt": "2026-08-01T15:01:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本市"
