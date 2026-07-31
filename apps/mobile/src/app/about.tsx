@@ -3,10 +3,12 @@ import { ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { paletteFor, type Palette } from '@/theme';
+import { useTextScale } from '@/use-text-scale';
 
 export default function AboutScreen() {
   const palette = paletteFor(useColorScheme());
-  const styles = useMemo(() => createStyles(palette), [palette]);
+  const { scale } = useTextScale();
+  const styles = useMemo(() => createStyles(palette, scale), [palette, scale]);
 
   return (
     <SafeAreaView edges={['bottom']} style={styles.safe}>
@@ -33,16 +35,16 @@ export default function AboutScreen() {
   );
 }
 
-function createStyles(c: Palette) {
+function createStyles(c: Palette, scale: number) {
   return StyleSheet.create({
     safe: { flex: 1, backgroundColor: c.paper },
     content: { padding: 20, paddingBottom: 48 },
-    title: { color: c.ink, fontFamily: 'serif', fontSize: 31, lineHeight: 40, fontWeight: '800' },
-    lead: { color: c.bodyText, fontSize: 16, lineHeight: 25, marginTop: 12, marginBottom: 24 },
+    title: { color: c.ink, fontFamily: 'serif', fontSize: 31 * scale, lineHeight: 40 * scale, fontWeight: '800' },
+    lead: { color: c.bodyText, fontSize: 16 * scale, lineHeight: 25 * scale, marginTop: 12, marginBottom: 24 },
     section: { paddingVertical: 18, borderTopWidth: 1, borderTopColor: c.line },
-    heading: { color: c.accentInk, fontSize: 17, fontWeight: '900' },
-    body: { color: c.bodyText, fontSize: 15, lineHeight: 24, marginTop: 6 },
+    heading: { color: c.accentInk, fontSize: 17 * scale, lineHeight: 23 * scale, fontWeight: '900' },
+    body: { color: c.bodyText, fontSize: 15 * scale, lineHeight: 24 * scale, marginTop: 6 },
     notice: { padding: 18, borderRadius: 7, backgroundColor: c.calmBg, marginTop: 16 },
-    noticeText: { color: c.calmInk, fontSize: 14, lineHeight: 22, fontWeight: '700' },
+    noticeText: { color: c.calmInk, fontSize: 14 * scale, lineHeight: 22 * scale, fontWeight: '700' },
   });
 }

@@ -29,15 +29,12 @@ import {
 import {
   AREA_KEY,
   freshnessColors,
-  LEGACY_LARGE_TEXT_KEY,
   paletteFor,
-  TEXT_SCALE_KEY,
-  textScaleFactors,
   textScaleLabels,
   textScales,
   type Palette,
-  type TextScale,
 } from '@/theme';
+import { useTextScale } from '@/use-text-scale';
 
 type Municipality = (typeof municipalities)[number];
 
@@ -60,31 +57,21 @@ const categoryIcons: Record<Exclude<ActionCategory, 'all'>, string> = {
 export default function HomeScreen() {
   const scheme = useColorScheme();
   const palette = paletteFor(scheme);
-  const styles = useMemo(() => createStyles(palette), [palette]);
+  const { textScale, changeTextScale, scale } = useTextScale();
+  // 行間は文字サイズに追従させる。固定のままだと「特大」で行が重なって読めない。
+  const styles = useMemo(() => createStyles(palette, scale), [palette, scale]);
 
   const [area, setArea] = useState<Municipality>('熊本県全域');
   const [category, setCategory] = useState<ActionCategory>('all');
   const [query, setQuery] = useState('');
-  const [textScale, setTextScale] = useState<TextScale>('standard');
   const [expandedSources, setExpandedSources] = useState<Record<string, boolean>>({});
   // 保存情報の期限切れは時間で変わる。起動時刻で固定せず、開いたままでも切り替わるようにする。
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    Promise.all([
-      AsyncStorage.getItem(AREA_KEY),
-      AsyncStorage.getItem(TEXT_SCALE_KEY),
-      AsyncStorage.getItem(LEGACY_LARGE_TEXT_KEY),
-    ]).then(([savedArea, savedScale, legacyLarge]) => {
+    AsyncStorage.getItem(AREA_KEY).then((savedArea) => {
       if (savedArea && municipalities.includes(savedArea as Municipality)) {
         setArea(savedArea as Municipality);
-      }
-      if (savedScale && textScales.includes(savedScale as TextScale)) {
-        setTextScale(savedScale as TextScale);
-      } else if (legacyLarge === 'true') {
-        // 2段階時代の「文字 大」設定を引き継ぐ。
-        setTextScale('large');
-        AsyncStorage.setItem(TEXT_SCALE_KEY, 'large');
       }
     });
     const tick = setInterval(() => setNow(new Date()), 60_000);
@@ -155,11 +142,6 @@ export default function HomeScreen() {
     await AsyncStorage.setItem(AREA_KEY, value);
   }
 
-  async function changeTextScale(value: TextScale) {
-    setTextScale(value);
-    await AsyncStorage.setItem(TEXT_SCALE_KEY, value);
-  }
-
   function resetFilters() {
     setCategory('all');
     setQuery('');
@@ -180,8 +162,6 @@ export default function HomeScreen() {
     );
   }
 
-  const scale = textScaleFactors[textScale];
-
   return (
     <View style={styles.root}>
       <SafeAreaView edges={['top']} style={styles.topSafe}>
@@ -193,14 +173,19 @@ export default function HomeScreen() {
               accessibilityLabel="救急と消防に119番で電話する"
               onPress={() => Linking.openURL('tel:119')}
               style={styles.emergencyButton}>
-              <Text style={styles.emergencyButtonText}>119</Text>
+              {/* 親に読み上げ用の説明があるので、中の文字は二重に読ませない。 */}
+              <Text importantForAccessibility="no" style={styles.emergencyButtonText}>
+                119
+              </Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="警察に110番で電話する"
               onPress={() => Linking.openURL('tel:110')}
               style={styles.emergencyButton}>
-              <Text style={styles.emergencyButtonText}>警察 110</Text>
+              <Text importantForAccessibility="no" style={styles.emergencyButtonText}>
+                警察 110
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -237,6 +222,7 @@ export default function HomeScreen() {
               onPress={() => changeTextScale(item)}
               style={[styles.textScaleButton, textScale === item && styles.textScaleButtonActive]}>
               <Text
+                importantForAccessibility="no"
                 style={[
                   styles.textScaleButtonText,
                   textScale === item && styles.textScaleButtonTextActive,
@@ -283,8 +269,12 @@ export default function HomeScreen() {
               accessibilityLabel={`${categoryLabels[item]} ${countsByCategory.get(item) ?? 0}件`}
               onPress={() => setCategory(item)}
               style={[styles.needCell, category === item && styles.needCellActive]}>
-              <Text style={styles.needIcon}>{categoryIcons[item]}</Text>
+              {/* accessibilityLabel が「◯◯ N件」を読むので、中の3つは読み上げから外す。 */}
+              <Text importantForAccessibility="no" style={styles.needIcon}>
+                {categoryIcons[item]}
+              </Text>
               <Text
+                importantForAccessibility="no"
                 style={[
                   styles.needLabel,
                   category === item && styles.needLabelActive,
@@ -293,6 +283,7 @@ export default function HomeScreen() {
                 {categoryLabels[item]}
               </Text>
               <Text
+                importantForAccessibility="no"
                 style={[
                   styles.needCount,
                   category === item && styles.needCountActive,
@@ -453,7 +444,9 @@ export default function HomeScreen() {
                     accessibilityLabel={`${item.title}の出典と時刻の詳細`}
                     onPress={() => toggleSource(item.id)}
                     style={styles.sourceToggle}>
-                    <Text style={[styles.sourceToggleText, { fontSize: 13 * scale }]}>
+                    <Text
+                      importantForAccessibility="no"
+                      style={[styles.sourceToggleText, { fontSize: 13 * scale }]}>
                       出典と時刻の詳細 {sourceOpen ? '▲' : '▼'}
                     </Text>
                   </Pressable>
@@ -472,10 +465,14 @@ export default function HomeScreen() {
                     accessibilityLabel={`${item.action}（外部の公式サイト）`}
                     onPress={() => openOfficial(item.sourceUrl, item.sourceName)}
                     style={styles.primaryButton}>
-                    <Text style={[styles.primaryButtonText, { fontSize: 15 * scale }]}>
+                    <Text
+                      importantForAccessibility="no"
+                      style={[styles.primaryButtonText, { fontSize: 15 * scale }]}>
                       {item.action}
                     </Text>
-                    <Text style={styles.primaryButtonArrow}>↗</Text>
+                    <Text importantForAccessibility="no" style={styles.primaryButtonArrow}>
+                      ↗
+                    </Text>
                   </Pressable>
                 </View>
               );
@@ -539,7 +536,7 @@ function haystack(card: ActionCard) {
   return `${card.title} ${card.summary} ${card.steps.join(' ')} ${card.action} ${card.keywords.join(' ')}`.toLowerCase();
 }
 
-function createStyles(c: Palette) {
+function createStyles(c: Palette, scale: number) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: c.paper },
     topSafe: { backgroundColor: c.navyDeep },
@@ -563,7 +560,8 @@ function createStyles(c: Palette) {
       borderRadius: 22,
       paddingHorizontal: 14,
     },
-    emergencyButtonText: { color: '#ffffff', fontWeight: '900' },
+    // 119 / 110 は最優先の導線。文字を大きくした人にはここも大きくする。
+    emergencyButtonText: { color: '#ffffff', fontWeight: '900', fontSize: 14 * scale },
     content: { paddingBottom: 48 },
     header: { padding: 18, flexDirection: 'row', alignItems: 'center', gap: 12 },
     brand: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
@@ -632,7 +630,7 @@ function createStyles(c: Palette) {
     freshnessText: { flex: 1 },
     freshnessTitle: { color: c.onNavy, fontWeight: '800' },
     freshnessTime: { color: c.onNavyMuted, fontFamily: 'monospace', marginTop: 3 },
-    heroNote: { color: c.onNavyMuted, marginTop: 12, lineHeight: 19 },
+    heroNote: { color: c.onNavyMuted, marginTop: 12, lineHeight: 19 * scale },
     sectionLabel: {
       color: c.muted,
       fontWeight: '900',
@@ -680,6 +678,7 @@ function createStyles(c: Palette) {
     chipActive: { backgroundColor: c.navy, borderColor: c.navy },
     chipText: { color: c.ink, fontWeight: '800' },
     chipTextActive: { color: '#ffffff' },
+    resultCount: { color: c.muted, fontFamily: 'monospace', fontSize: 14 * scale },
     searchWrap: { paddingHorizontal: 16, paddingBottom: 22 },
     searchInput: {
       minHeight: 52,
@@ -701,7 +700,6 @@ function createStyles(c: Palette) {
       gap: 8,
     },
     sectionTitle: { color: c.ink, fontFamily: 'serif', fontWeight: '800', flexShrink: 1 },
-    resultCount: { color: c.muted, fontFamily: 'monospace' },
     cardList: { padding: 16, gap: 14 },
     card: {
       padding: 22,
@@ -724,11 +722,12 @@ function createStyles(c: Palette) {
     },
     iconText: { color: c.accentInk, fontFamily: 'serif', fontSize: 19, fontWeight: '900' },
     tag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 3, backgroundColor: c.chipBg },
-    tagText: { color: c.muted, fontSize: 10, fontWeight: '900' },
+    tagText: { color: c.muted, fontSize: 10 * scale, fontWeight: '900' },
     expiredTag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 3, backgroundColor: c.redSoft },
-    expiredTagText: { color: c.dangerInk, fontSize: 10, fontWeight: '900' },
-    cardTitle: { color: c.ink, fontWeight: '900', lineHeight: 29, marginTop: 15 },
-    cardBody: { color: c.bodyText, lineHeight: 23, marginTop: 7 },
+    // 「期限切れ」は鮮度の警告そのもの。小さいまま置き去りにしない。
+    expiredTagText: { color: c.dangerInk, fontSize: 10 * scale, fontWeight: '900' },
+    cardTitle: { color: c.ink, fontWeight: '900', lineHeight: 29 * scale, marginTop: 15 },
+    cardBody: { color: c.bodyText, lineHeight: 23 * scale, marginTop: 7 },
     expiredBox: {
       marginTop: 12,
       padding: 13,
@@ -738,7 +737,7 @@ function createStyles(c: Palette) {
       backgroundColor: c.warnBg,
     },
     expiredTitle: { color: c.warnInk, fontWeight: '900' },
-    expiredText: { color: c.warnInk, lineHeight: 20, marginTop: 4 },
+    expiredText: { color: c.warnInk, lineHeight: 20 * scale, marginTop: 4 },
     steps: {
       marginTop: 16,
       padding: 14,
@@ -761,10 +760,10 @@ function createStyles(c: Palette) {
       fontSize: 12,
       fontWeight: '900',
     },
-    stepText: { flex: 1, color: c.bodyText, lineHeight: 21 },
+    stepText: { flex: 1, color: c.bodyText, lineHeight: 21 * scale },
     caution: { marginTop: 16, borderRadius: 5, padding: 13, backgroundColor: c.redSoft },
     cautionTitle: { color: c.dangerInk, fontWeight: '900' },
-    cautionText: { color: c.dangerInk, lineHeight: 20, marginTop: 3 },
+    cautionText: { color: c.dangerInk, lineHeight: 20 * scale, marginTop: 3 },
     sourceSummary: {
       marginTop: 14,
       flexDirection: 'row',
@@ -776,7 +775,7 @@ function createStyles(c: Palette) {
     sourceSummaryExpired: { color: c.dangerInk, fontWeight: '900' },
     sourceToggle: { minHeight: 44, justifyContent: 'center', marginTop: 4 },
     sourceToggleText: { color: c.accentInk, fontWeight: '800', textDecorationLine: 'underline' },
-    source: { color: c.muted, fontFamily: 'monospace', lineHeight: 17, marginBottom: 14 },
+    source: { color: c.muted, fontFamily: 'monospace', lineHeight: 17 * scale, marginBottom: 14 },
     primaryButton: {
       marginTop: 14,
       minHeight: 52,
@@ -800,7 +799,7 @@ function createStyles(c: Palette) {
       gap: 8,
     },
     emptyTitle: { color: c.ink, fontWeight: '900' },
-    emptyBody: { color: c.bodyText, lineHeight: 21 },
+    emptyBody: { color: c.bodyText, lineHeight: 21 * scale },
     emptyButton: {
       marginTop: 8,
       minHeight: 48,
@@ -812,8 +811,8 @@ function createStyles(c: Palette) {
     },
     emptyButtonText: { color: '#ffffff', fontWeight: '900' },
     localPanel: { margin: 16, padding: 25, borderRadius: 8, backgroundColor: c.navy },
-    localTitle: { color: c.onNavy, fontFamily: 'serif', fontWeight: '800', lineHeight: 32 },
-    localBody: { color: c.onNavyMuted, lineHeight: 22, marginTop: 9 },
+    localTitle: { color: c.onNavy, fontFamily: 'serif', fontWeight: '800', lineHeight: 32 * scale },
+    localBody: { color: c.onNavyMuted, lineHeight: 22 * scale, marginTop: 9 },
     secondaryButton: {
       minHeight: 52,
       borderRadius: 5,
@@ -833,14 +832,15 @@ function createStyles(c: Palette) {
       borderTopRightRadius: 34,
       borderRadius: 8,
     },
-    privacyTitle: { color: c.calmInk, fontFamily: 'serif', fontWeight: '800', lineHeight: 33 },
-    privacyBody: { color: c.calmInk, lineHeight: 22, marginTop: 10 },
+    privacyTitle: { color: c.calmInk, fontFamily: 'serif', fontWeight: '800', lineHeight: 33 * scale },
+    privacyBody: { color: c.calmInk, lineHeight: 22 * scale, marginTop: 10 },
     aboutButton: { minHeight: 44, justifyContent: 'center', marginTop: 12 },
     aboutLink: { color: c.calmInk, fontWeight: '900', textDecorationLine: 'underline' },
     footer: {
       color: c.muted,
-      fontSize: 11,
-      lineHeight: 18,
+      // 「公式サービスではありません」の断り書き。ここだけ小さいままにしない。
+      fontSize: 11 * scale,
+      lineHeight: 18 * scale,
       marginHorizontal: 20,
       paddingTop: 22,
       borderTopWidth: 1,
