@@ -174,7 +174,7 @@ export default function HomeScreen() {
               onPress={() => Linking.openURL('tel:119')}
               style={styles.emergencyButton}>
               {/* 親に読み上げ用の説明があるので、中の文字は二重に読ませない。 */}
-              <Text importantForAccessibility="no" style={styles.emergencyButtonText}>
+              <Text importantForAccessibility="no-hide-descendants" style={styles.emergencyButtonText}>
                 119
               </Text>
             </Pressable>
@@ -183,7 +183,7 @@ export default function HomeScreen() {
               accessibilityLabel="警察に110番で電話する"
               onPress={() => Linking.openURL('tel:110')}
               style={styles.emergencyButton}>
-              <Text importantForAccessibility="no" style={styles.emergencyButtonText}>
+              <Text importantForAccessibility="no-hide-descendants" style={styles.emergencyButtonText}>
                 警察 110
               </Text>
             </Pressable>
@@ -222,7 +222,7 @@ export default function HomeScreen() {
               onPress={() => changeTextScale(item)}
               style={[styles.textScaleButton, textScale === item && styles.textScaleButtonActive]}>
               <Text
-                importantForAccessibility="no"
+                importantForAccessibility="no-hide-descendants"
                 style={[
                   styles.textScaleButtonText,
                   textScale === item && styles.textScaleButtonTextActive,
@@ -270,11 +270,11 @@ export default function HomeScreen() {
               onPress={() => setCategory(item)}
               style={[styles.needCell, category === item && styles.needCellActive]}>
               {/* accessibilityLabel が「◯◯ N件」を読むので、中の3つは読み上げから外す。 */}
-              <Text importantForAccessibility="no" style={styles.needIcon}>
+              <Text importantForAccessibility="no-hide-descendants" style={styles.needIcon}>
                 {categoryIcons[item]}
               </Text>
               <Text
-                importantForAccessibility="no"
+                importantForAccessibility="no-hide-descendants"
                 style={[
                   styles.needLabel,
                   category === item && styles.needLabelActive,
@@ -283,7 +283,7 @@ export default function HomeScreen() {
                 {categoryLabels[item]}
               </Text>
               <Text
-                importantForAccessibility="no"
+                importantForAccessibility="no-hide-descendants"
                 style={[
                   styles.needCount,
                   category === item && styles.needCountActive,
@@ -445,7 +445,7 @@ export default function HomeScreen() {
                     onPress={() => toggleSource(item.id)}
                     style={styles.sourceToggle}>
                     <Text
-                      importantForAccessibility="no"
+                      importantForAccessibility="no-hide-descendants"
                       style={[styles.sourceToggleText, { fontSize: 13 * scale }]}>
                       出典と時刻の詳細 {sourceOpen ? '▲' : '▼'}
                     </Text>
@@ -466,11 +466,11 @@ export default function HomeScreen() {
                     onPress={() => openOfficial(item.sourceUrl, item.sourceName)}
                     style={styles.primaryButton}>
                     <Text
-                      importantForAccessibility="no"
+                      importantForAccessibility="no-hide-descendants"
                       style={[styles.primaryButtonText, { fontSize: 15 * scale }]}>
                       {item.action}
                     </Text>
-                    <Text importantForAccessibility="no" style={styles.primaryButtonArrow}>
+                    <Text importantForAccessibility="no-hide-descendants" style={styles.primaryButtonArrow}>
                       ↗
                     </Text>
                   </Pressable>
