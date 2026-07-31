@@ -133,14 +133,29 @@ commit 済み（`ab372e3` / `36781c7` / `ae1c8e6`）:
 ## 未決（次セッション冒頭でユーザーへ確認）
 
 1. **iOS を続けるなら Xcode 26.4+ への更新が必須**（上記のとおり公式に確定）
-   - 更新は App Store 経由でユーザー操作が必要
-   - **ディスク残 31GB / 97%使用**。本セッションで DerivedData 3.8GB・`apps/mobile/ios` 1.2GB を
-     削除して 26GB → 31GB まで回復させた（`xcrun simctl delete unavailable` は該当なし）
-   - 最大の消費元は `~/Library/Developer/CoreSimulator/Devices` の **48GB / 45台**。内訳は
-     iOS 18.0=12台 / 18.1=11台 / 18.2=11台 / 26.0=11台 / watchOS 15台 / visionOS 3台。
-     Xcode 26.x で使うのは iOS 26.0 系なので、iOS 18.x の 34 台は削除候補
-     （`xcrun simctl delete <UDID>`、ランタイムごと消すなら `xcrun simctl runtime delete`）。
-     **他プロジェクトへ影響するためユーザー判断が要る。未実行。**
+   - 更新は App Store 経由でユーザー操作が必要。**ディスクは確保済み（下記）**
+   - 更新後の手順:
+     ```bash
+     rm -rf apps/mobile/node_modules/expo-modules-jsi/apple/Products   # メンテナ指示
+     cd apps/mobile && npx expo run:ios --device "iPhone 16"           # iOS 26.0 系のみ残存
+     ```
+   - iPhone SE (3rd gen) は iOS 18.x 側にしか無かったため削除済み。小画面で試すなら
+     Xcode から iOS 26.0 の SE 系デバイスを新規作成すること
+
+### 本セッションで実施したディスク確保（ユーザー承認済み）
+
+**26GB → 45GB（コンテナ実値 48.2GB）まで回復。** 内訳:
+
+- `~/Library/Developer/Xcode/DerivedData` 3.8GB 削除（純粋なビルドキャッシュ）
+- `apps/mobile/ios` 1.2GB 削除（`prebuild` で再生成できる生成物。`.gitignore` 済み）
+- **iOS 18.0 / 18.1 / 18.2 のシミュレータ 34台を削除**（`~/.../CoreSimulator/Devices` 48GB → 21GB）。
+  iOS 26.0 の 11台、watchOS 15台、visionOS 3台は残した
+- APFS の解放は非同期で、`df` に反映されるまで数分かかった（削除直後は +1GB しか見えなかった）
+
+未実行（さらに要るとき用）: 使われなくなった **iOS 18.0/18.1/18.2 のランタイム本体**
+（`xcrun simctl runtime delete <UDID>`。Disk Images 合計 67.8GB のうちの3つ）。
+再取得は1本あたり数GBのダウンロードになるため、必要になるまで残している。
+`~/.gradle` 6.1GB と `~/.npm` 3.7GB も未削除。
 2. **キャラクター／アイコン**（前々回からの持ち越し。くまモンは No-Go 確定）
    - 代替案1（推奨）: 困りごとグリッドに絵記号。ただし現状すでに漢字1文字
      （報/水/食/避/薬/電/道/片、`index.tsx:49-58`）が入っており、これを絵記号へ置き換える判断になる
