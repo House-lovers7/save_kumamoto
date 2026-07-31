@@ -380,9 +380,16 @@ export default function HomeScreen() {
                         <Text style={styles.tagText}>端末に保存済み</Text>
                       </View>
                     )}
-                    <View style={styles.tag}>
-                      <Text style={styles.tagText}>公式情報</Text>
-                    </View>
+                    {/* 確認できていないカードに「公式情報」と付けると、行けば分かると誤解させる。 */}
+                    {item.sourceStatus === 'unavailable' ? (
+                      <View style={styles.unverifiedTag}>
+                        <Text style={styles.unverifiedTagText}>未確認</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.tag}>
+                        <Text style={styles.tagText}>公式情報</Text>
+                      </View>
+                    )}
                     {expired && (
                       <View style={styles.expiredTag}>
                         <Text style={styles.expiredTagText}>期限切れ</Text>
@@ -406,6 +413,22 @@ export default function HomeScreen() {
                     <Text style={[styles.cardBody, { fontSize: 15 * scale }]}>{item.summary}</Text>
                   )}
 
+                  {/*
+                    リンクは生きているが、そのページにこの話題の案内が無い状態。
+                    黙って通常のカードとして出すと「行けば分かる」と誤解させるので、
+                    手順より先に、何が確認できていないのかを本文として出す。
+                  */}
+                  {item.sourceStatus === 'unavailable' && (
+                    <View style={styles.unverifiedNotice}>
+                      <Text style={[styles.unverifiedTitle, { fontSize: 14 * scale }]}>
+                        公式の案内を確認できていません
+                      </Text>
+                      <Text style={[styles.unverifiedText, { fontSize: 13 * scale }]}>
+                        {item.unverified}
+                      </Text>
+                    </View>
+                  )}
+
                   {/* 期限切れでも消さない。時刻に依存しない手順は、通信がなくても使える。 */}
                   <View style={styles.steps}>
                     <Text style={[styles.stepsTitle, { fontSize: 12 * scale }]}>まずやること</Text>
@@ -416,6 +439,49 @@ export default function HomeScreen() {
                       </View>
                     ))}
                   </View>
+
+                  {/*
+                    混同すると健康被害・無駄足につながる区別。期限切れでも隠さない。
+                    「飲料用か生活用水か」は、期限が切れても確認すべきことに変わりがない。
+                  */}
+                  {item.verifyPoints?.map((point) => (
+                    <View key={point.label} style={styles.verifyPoint}>
+                      <Text style={[styles.verifyPointTitle, { fontSize: 14 * scale }]}>
+                        公式ページで必ず確認する: {point.label}
+                      </Text>
+                      <View style={styles.verifyPointOptions}>
+                        {point.options.map((option) => (
+                          <View key={option} style={styles.verifyPointOption}>
+                            <Text style={[styles.verifyPointOptionText, { fontSize: 13 * scale }]}>
+                              {option}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                      <Text style={[styles.verifyPointWhy, { fontSize: 13 * scale }]}>
+                        {point.why}
+                      </Text>
+                    </View>
+                  ))}
+
+                  {/* 順序を誤ると取り返しがつかない手続き。番号を残して順番であることを示す。 */}
+                  {item.irreversibleOrder && (
+                    <View style={styles.irreversibleOrder}>
+                      <Text style={[styles.irreversibleTitle, { fontSize: 14 * scale }]}>
+                        順番を間違えると取り返しがつきません
+                      </Text>
+                      {item.irreversibleOrder.map((entry, index) => (
+                        <View key={entry} style={styles.irreversibleItem}>
+                          <Text style={[styles.irreversibleNumber, { fontSize: 13 * scale }]}>
+                            {index + 1}.
+                          </Text>
+                          <Text style={[styles.irreversibleText, { fontSize: 13 * scale }]}>
+                            {entry}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
 
                   <View style={styles.caution}>
                     <Text style={[styles.cautionTitle, { fontSize: 12 * scale }]}>注意</Text>
@@ -723,6 +789,9 @@ function createStyles(c: Palette, scale: number) {
     iconText: { color: c.accentInk, fontFamily: 'serif', fontSize: 19, fontWeight: '900' },
     tag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 3, backgroundColor: c.chipBg },
     tagText: { color: c.muted, fontSize: 10 * scale, fontWeight: '900' },
+    // 「未確認」は Web の .action-card__meta .is-unverified と同じ黄系。注意（赤系）と分ける。
+    unverifiedTag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 3, backgroundColor: c.warnBg },
+    unverifiedTagText: { color: c.warnInk, fontSize: 10 * scale, fontWeight: '900' },
     expiredTag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 3, backgroundColor: c.redSoft },
     // 「期限切れ」は鮮度の警告そのもの。小さいまま置き去りにしない。
     expiredTagText: { color: c.dangerInk, fontSize: 10 * scale, fontWeight: '900' },
@@ -738,6 +807,20 @@ function createStyles(c: Palette, scale: number) {
     },
     expiredTitle: { color: c.warnInk, fontWeight: '900' },
     expiredText: { color: c.warnInk, lineHeight: 20 * scale, marginTop: 4 },
+    /*
+      公式ページに案内が無いことの表示。手順より前に出るので、警告色の中でも
+      「危険」ではなく「欠けている」と読める黄系（warn*）を使い、注意（赤系）と分ける。
+    */
+    unverifiedNotice: {
+      marginTop: 12,
+      padding: 14,
+      borderRadius: 5,
+      borderWidth: 2,
+      borderColor: c.warnBorder,
+      backgroundColor: c.warnBg,
+    },
+    unverifiedTitle: { color: c.warnInk, fontWeight: '900' },
+    unverifiedText: { color: c.warnInk, lineHeight: 20 * scale, marginTop: 4 },
     steps: {
       marginTop: 16,
       padding: 14,
@@ -761,6 +844,47 @@ function createStyles(c: Palette, scale: number) {
       fontWeight: '900',
     },
     stepText: { flex: 1, color: c.bodyText, lineHeight: 21 * scale },
+    /*
+      混同すると健康被害・無駄足につながる区別。読み飛ばされると意味がないので、
+      手順と同じ紙面の重みを持たせつつ、左の縦線で「ここは確認項目」と分からせる。
+    */
+    verifyPoint: {
+      marginTop: 16,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      borderRadius: 7,
+      borderWidth: 1,
+      borderColor: c.line,
+      borderLeftWidth: 6,
+      borderLeftColor: c.warnBorder,
+      backgroundColor: c.paper,
+    },
+    verifyPointTitle: { color: c.accentInk, fontWeight: '900', lineHeight: 21 * scale },
+    verifyPointOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+    verifyPointOption: {
+      paddingVertical: 5,
+      paddingHorizontal: 12,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: c.line,
+      backgroundColor: c.chipBg,
+    },
+    verifyPointOptionText: { color: c.accentInk, fontWeight: '900' },
+    verifyPointWhy: { color: c.bodyText, lineHeight: 21 * scale, marginTop: 10 },
+    // 順序を誤ると取り返しがつかない手続き。番号を残して順番であることを示す。
+    irreversibleOrder: {
+      marginTop: 16,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      borderRadius: 7,
+      borderWidth: 2,
+      borderColor: c.warnBorder,
+      backgroundColor: c.warnBg,
+    },
+    irreversibleTitle: { color: c.warnInk, fontWeight: '900' },
+    irreversibleItem: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', marginTop: 8 },
+    irreversibleNumber: { color: c.warnInk, fontWeight: '900' },
+    irreversibleText: { flex: 1, color: c.warnInk, lineHeight: 21 * scale },
     caution: { marginTop: 16, borderRadius: 5, padding: 13, backgroundColor: c.redSoft },
     cautionTitle: { color: c.dangerInk, fontWeight: '900' },
     cautionText: { color: c.dangerInk, lineHeight: 20 * scale, marginTop: 3 },
