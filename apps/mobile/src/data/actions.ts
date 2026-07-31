@@ -100,9 +100,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本県 防災推進課",
     "sourceUrl": "https://www.pref.kumamoto.jp/soshiki/222/",
     "publishedAt": "2026-07-30T00:00:00+09:00",
-    "fetchedAt": "2026-07-31T18:30:00+09:00",
-    "checkedAt": "2026-07-31T18:30:00+09:00",
-    "expiresAt": "2026-08-01T18:30:00+09:00",
+    "fetchedAt": "2026-07-31T20:16:00+09:00",
+    "checkedAt": "2026-07-31T20:16:00+09:00",
+    "expiresAt": "2026-08-01T20:16:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -136,9 +136,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本市",
     "sourceUrl": "https://www.city.kumamoto.jp/list04828.html",
     "publishedAt": "2026-07-31T00:00:00+09:00",
-    "fetchedAt": "2026-07-31T18:30:00+09:00",
-    "checkedAt": "2026-07-31T18:30:00+09:00",
-    "expiresAt": "2026-08-01T18:30:00+09:00",
+    "fetchedAt": "2026-07-31T20:16:00+09:00",
+    "checkedAt": "2026-07-31T20:16:00+09:00",
+    "expiresAt": "2026-08-01T20:16:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本市"
@@ -185,9 +185,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本市 水保全課",
     "sourceUrl": "https://www.city.kumamoto.jp/kiji00315906/index.html",
     "publishedAt": "2026-07-31T00:00:00+09:00",
-    "fetchedAt": "2026-07-31T18:30:00+09:00",
-    "checkedAt": "2026-07-31T18:30:00+09:00",
-    "expiresAt": "2026-08-01T18:30:00+09:00",
+    "fetchedAt": "2026-07-31T20:16:00+09:00",
+    "checkedAt": "2026-07-31T20:16:00+09:00",
+    "expiresAt": "2026-08-01T20:16:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本市"
@@ -225,9 +225,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本市",
     "sourceUrl": "https://www.city.kumamoto.jp/list04828.html",
     "publishedAt": "2026-07-31T00:00:00+09:00",
-    "fetchedAt": "2026-07-31T18:30:00+09:00",
-    "checkedAt": "2026-07-31T18:30:00+09:00",
-    "expiresAt": "2026-08-01T18:30:00+09:00",
+    "fetchedAt": "2026-07-31T20:16:00+09:00",
+    "checkedAt": "2026-07-31T20:16:00+09:00",
+    "expiresAt": "2026-08-01T20:16:00+09:00",
     "sourceStatus": "unavailable",
     "unverified": "食料・生活用品の配布場所と時間をまとめた公式案内は、2026年7月31日の巡回では確認できませんでした。リンク先は熊本市の災害情報の集約ページです。",
     "areas": [
@@ -240,11 +240,11 @@ export const actionCards: ActionCard[] = [
     "category": "essentials",
     "icon": "油",
     "title": "給油できる場所を探す",
-    "summary": "給油できる場所や給油制限をまとめた公式案内は、今回の巡回では見つかりませんでした。県の災害情報を見たうえで、各事業者の公式情報を直接確認してください。",
+    "summary": "資源エネルギー庁の地図で、近くの給油所が営業できているかを確認します。表示は各給油所が報告した時点のもので、着くまでに変わることがあります。",
     "steps": [
       "残量に余裕があるうちに給油の計画を立てる",
-      "県の災害情報に燃料の案内が出ていないか確認する",
-      "各事業者の公式サイト・公式SNSで営業を確認する"
+      "地図で近くの給油所の営業状況を確認する",
+      "報告時点の情報なので、着く前に変わると考える"
     ],
     "keywords": [
       "ガソリン",
@@ -258,16 +258,26 @@ export const actionCards: ActionCard[] = [
       "きゅうゆ",
       "灯油"
     ],
-    "action": "熊本県の災害情報を確認する",
+    "action": "住民拠点SS等検索で営業状況を開く",
     "caution": "営業中・在庫ありとは断定しません。補給時刻や在庫量をSNSへ転載しないでください。",
-    "sourceName": "熊本県 広報課",
-    "sourceUrl": "https://www.pref.kumamoto.jp/soshiki/1/274517.html",
-    "publishedAt": "2026-07-31T00:00:00+09:00",
-    "fetchedAt": "2026-07-31T18:30:00+09:00",
-    "checkedAt": "2026-07-31T18:30:00+09:00",
-    "expiresAt": "2026-08-01T18:30:00+09:00",
-    "sourceStatus": "unavailable",
-    "unverified": "給油できる場所と給油制限の公式案内は、2026年7月31日の巡回では確認できませんでした。リンク先は熊本県の令和8年熊本地震に関する情報ページです。",
+    "verifyPoints": [
+      {
+        "label": "給油所の営業状況の区分",
+        "options": [
+          "営業可",
+          "営業不可",
+          "確認中"
+        ],
+        "why": "「確認中」は営業しているという意味ではありません。表示は各給油所が報告した時点のもので、在庫不足による営業停止が発生するなど、実際の状況と違うことがあると出典に明記されています。"
+      }
+    ],
+    "sourceName": "資源エネルギー庁 資源・燃料部",
+    "sourceUrl": "https://www.enecho-ss.meti.go.jp/b/enecho/",
+    "publishedAt": "2026-07-28T16:31:00+09:00",
+    "fetchedAt": "2026-07-31T20:16:00+09:00",
+    "checkedAt": "2026-07-31T20:16:00+09:00",
+    "expiresAt": "2026-08-01T20:16:00+09:00",
+    "sourceStatus": "official",
     "areas": [
       "熊本県全域"
     ],
@@ -301,11 +311,11 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本市 廃棄物計画課",
     "sourceUrl": "https://www.city.kumamoto.jp/kiji00372079/index.html",
     "publishedAt": "2026-07-31T00:00:00+09:00",
-    "fetchedAt": "2026-07-31T18:30:00+09:00",
-    "checkedAt": "2026-07-31T18:30:00+09:00",
-    "expiresAt": "2026-08-01T18:30:00+09:00",
+    "fetchedAt": "2026-07-31T20:16:00+09:00",
+    "checkedAt": "2026-07-31T20:16:00+09:00",
+    "expiresAt": "2026-08-01T20:16:00+09:00",
     "sourceStatus": "unavailable",
-    "unverified": "断水中のトイレ・携帯トイレ・し尿の処分方法の公式案内は、2026年7月31日の巡回では確認できませんでした。リンク先で確認できるのは災害ごみの出し方です。",
+    "unverified": "断水中のトイレ・携帯トイレ・し尿の処分方法の公式案内は、2026年7月31日の巡回では確認できませんでした。熊本市上下水道局の緊急情報にも記載がありません。リンク先で確認できるのは災害ごみの出し方です。",
     "areas": [
       "熊本市"
     ],
@@ -345,9 +355,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本市 保育幼稚園課",
     "sourceUrl": "https://www.city.kumamoto.jp/kiji00372099/index.html",
     "publishedAt": "2026-07-29T00:00:00+09:00",
-    "fetchedAt": "2026-07-31T18:30:00+09:00",
-    "checkedAt": "2026-07-31T18:30:00+09:00",
-    "expiresAt": "2026-08-01T18:30:00+09:00",
+    "fetchedAt": "2026-07-31T20:16:00+09:00",
+    "checkedAt": "2026-07-31T20:16:00+09:00",
+    "expiresAt": "2026-08-01T20:16:00+09:00",
     "sourceStatus": "unavailable",
     "unverified": "ミルク・離乳食・おむつの配布先と授乳・休憩場所の公式案内は、2026年7月31日の巡回では確認できませんでした。リンク先で確認できるのは保育施設の開園状況です。",
     "areas": [
@@ -400,9 +410,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本県 認知症施策・地域ケア推進課",
     "sourceUrl": "https://www.pref.kumamoto.jp/soshiki/33/274616.html",
     "publishedAt": "2026-07-29T00:00:00+09:00",
-    "fetchedAt": "2026-07-31T18:30:00+09:00",
-    "checkedAt": "2026-07-31T18:30:00+09:00",
-    "expiresAt": "2026-08-01T18:30:00+09:00",
+    "fetchedAt": "2026-07-31T20:16:00+09:00",
+    "checkedAt": "2026-07-31T20:16:00+09:00",
+    "expiresAt": "2026-08-01T20:16:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -414,10 +424,10 @@ export const actionCards: ActionCard[] = [
     "category": "shelter",
     "icon": "避",
     "title": "避難所の開設・条件を確認する",
-    "summary": "開設状況に加え、ペット同伴、車中泊、車椅子、乳幼児、充電などの利用条件を確認します。",
+    "summary": "熊本市の公式サイトから開設中の避難所を確認します。ペットの同行など受け入れの条件は避難所ごとに違うため、行く前に確認します。",
     "steps": [
       "公式ページで開設中の避難所を確認する",
-      "ペット・車中泊・車椅子などの条件を確認する",
+      "ペットや車中泊の可否は行く前に電話で確認する",
       "移動が難しいときは市町村へ相談する"
     ],
     "keywords": [
@@ -440,9 +450,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本市 防災サイト",
     "sourceUrl": "https://www.city.kumamoto.jp/default.html",
     "publishedAt": "2026-07-28T16:49:00+09:00",
-    "fetchedAt": "2026-07-31T18:30:00+09:00",
-    "checkedAt": "2026-07-31T18:30:00+09:00",
-    "expiresAt": "2026-08-01T18:30:00+09:00",
+    "fetchedAt": "2026-07-31T20:16:00+09:00",
+    "checkedAt": "2026-07-31T20:16:00+09:00",
+    "expiresAt": "2026-08-01T20:16:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本市"
@@ -454,10 +464,10 @@ export const actionCards: ActionCard[] = [
     "category": "medical",
     "icon": "薬",
     "title": "薬・医療を止めない",
-    "summary": "診療可能な医療機関でも、診療科や受付が制限される場合があります。公式案内と代替連絡手段を確認します。",
+    "summary": "マイナ保険証や資格確認書がなくても医療機関を受診できます。診療科や受付が制限される場合があるため、行く前に電話で確認します。",
     "steps": [
       "命の危険・重い症状は、すぐ119番に電話する",
-      "公式の医療情報で診療状況を確認する",
+      "保険証がなくても受診できることを確認する",
       "受け入れ可否は、行く前に電話で確認する",
       "お薬手帳か、薬の名前がわかるものを持って行く"
     ],
@@ -482,14 +492,14 @@ export const actionCards: ActionCard[] = [
       "熱",
       "痛い"
     ],
-    "action": "熊本県の医療情報を確認する",
+    "action": "熊本県の受診についての案内を開く",
     "caution": "このアプリは診断や受入可否を判定しません。重い症状や命の危険がある場合は119番です。",
     "sourceName": "熊本県 国保・高齢者医療課",
     "sourceUrl": "https://www.pref.kumamoto.jp/soshiki/43/274584.html",
     "publishedAt": "2026-07-29T00:00:00+09:00",
-    "fetchedAt": "2026-07-31T18:30:00+09:00",
-    "checkedAt": "2026-07-31T18:30:00+09:00",
-    "expiresAt": "2026-08-01T18:30:00+09:00",
+    "fetchedAt": "2026-07-31T20:16:00+09:00",
+    "checkedAt": "2026-07-31T20:16:00+09:00",
+    "expiresAt": "2026-08-01T20:16:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -501,11 +511,11 @@ export const actionCards: ActionCard[] = [
     "category": "communication",
     "icon": "電",
     "title": "連絡できないときの順番",
-    "summary": "携帯会社の障害、JAPANローミング™、00000JAPAN、公衆電話、災害用伝言171を順に確認します。",
+    "summary": "電話がつながりにくいときの連絡手段を確認します。災害用伝言ダイヤル171、携帯各社の災害用伝言板、JAPANローミング™の案内が出ています。",
     "steps": [
-      "契約している携帯会社の障害情報を確認する",
-      "つながらないときは00000JAPANや公衆電話を試す",
-      "家族への連絡は災害用伝言ダイヤル171に録音する"
+      "家族への連絡は災害用伝言ダイヤル171に録音する",
+      "つながらないときは各社の災害用伝言板を使う",
+      "自分の携帯がJAPANローミングの対象かを確認する"
     ],
     "keywords": [
       "でんわ",
@@ -530,14 +540,14 @@ export const actionCards: ActionCard[] = [
       "つながらない",
       "家族"
     ],
-    "action": "通信各社の公式障害情報を確認する",
-    "caution": "00000JAPANは暗号化されていません。住所、医療情報、ID、パスワード、金融情報を送らないでください。",
-    "sourceName": "電気通信事業者協会（TCA）・通信各社",
+    "action": "災害時の連絡手段の案内を開く",
+    "caution": "公衆Wi-Fiは暗号化されていないことがあります。住所、医療情報、ID、パスワード、金融情報を送らないでください。",
+    "sourceName": "電気通信事業者協会（TCA）",
     "sourceUrl": "https://www.tca.or.jp/information/japan-roaming.html",
     "publishedAt": "2026-04-01T00:00:00+09:00",
-    "fetchedAt": "2026-07-31T18:30:00+09:00",
-    "checkedAt": "2026-07-31T18:30:00+09:00",
-    "expiresAt": "2026-08-01T18:30:00+09:00",
+    "fetchedAt": "2026-07-31T20:16:00+09:00",
+    "checkedAt": "2026-07-31T20:16:00+09:00",
+    "expiresAt": "2026-08-01T20:16:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -549,9 +559,9 @@ export const actionCards: ActionCard[] = [
     "category": "transport",
     "icon": "道",
     "title": "移動前に道路・交通を再確認する",
-    "summary": "目的地が開いていても、道路規制や公共交通の運休で到達できない場合があります。",
+    "summary": "国土交通省九州地方整備局の地震対応ページで、通行止めと迂回路の発表、復旧の状況を確認します。公共交通の運行状況はこのページでは分かりません。",
     "steps": [
-      "出発前に道路規制と公共交通の運行を確認する",
+      "出発前に通行止めと迂回路の発表を確認する",
       "通行実績は「通れる保証」ではないと考える",
       "迂回や移動の中止も選択肢に入れる"
     ],
@@ -571,14 +581,14 @@ export const actionCards: ActionCard[] = [
       "いどう",
       "運休"
     ],
-    "action": "国土交通省の道路情報を確認する",
+    "action": "九州地方整備局の地震対応ページを開く",
     "caution": "通行実績は通行可能の保証ではありません。出発直前に道路管理者と現地の規制を優先してください。",
     "sourceName": "国土交通省 九州地方整備局",
-    "sourceUrl": "https://www.qsr.mlit.go.jp/",
-    "publishedAt": "2026-07-28T00:00:00+09:00",
-    "fetchedAt": "2026-07-31T18:30:00+09:00",
-    "checkedAt": "2026-07-31T18:30:00+09:00",
-    "expiresAt": "2026-08-01T18:30:00+09:00",
+    "sourceUrl": "https://www.qsr.mlit.go.jp/bousai_joho/r80728kumamotozisinn.html",
+    "publishedAt": "2026-07-31T00:00:00+09:00",
+    "fetchedAt": "2026-07-31T20:16:00+09:00",
+    "checkedAt": "2026-07-31T20:16:00+09:00",
+    "expiresAt": "2026-08-01T20:16:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -622,10 +632,10 @@ export const actionCards: ActionCard[] = [
     ],
     "sourceName": "熊本市 各区役所福祉課",
     "sourceUrl": "https://www.city.kumamoto.jp/kiji0032451/index.html",
-    "publishedAt": "2026-07-30T00:00:00+09:00",
-    "fetchedAt": "2026-07-31T18:30:00+09:00",
-    "checkedAt": "2026-07-31T18:30:00+09:00",
-    "expiresAt": "2026-08-01T18:30:00+09:00",
+    "publishedAt": "2026-07-31T00:00:00+09:00",
+    "fetchedAt": "2026-07-31T20:16:00+09:00",
+    "checkedAt": "2026-07-31T20:16:00+09:00",
+    "expiresAt": "2026-08-01T20:16:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本市"
@@ -671,10 +681,10 @@ export const actionCards: ActionCard[] = [
     ],
     "sourceName": "熊本市",
     "sourceUrl": "https://www.city.kumamoto.jp/list04828.html",
-    "publishedAt": "2026-07-30T00:00:00+09:00",
-    "fetchedAt": "2026-07-31T18:30:00+09:00",
-    "checkedAt": "2026-07-31T18:30:00+09:00",
-    "expiresAt": "2026-08-01T18:30:00+09:00",
+    "publishedAt": "2026-07-31T00:00:00+09:00",
+    "fetchedAt": "2026-07-31T20:16:00+09:00",
+    "checkedAt": "2026-07-31T20:16:00+09:00",
+    "expiresAt": "2026-08-01T20:16:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本市"
