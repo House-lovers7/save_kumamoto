@@ -96,8 +96,9 @@ test("ネイティブ版でも困りごとのかな・話し言葉から該当�
 
 test("ネイティブ版の期限切れ判定と接続確認時刻が Web と同じ挙動", () => {
   const card = mobileCards[0];
-  assert.equal(mobileIsExpired(card, new Date("2026-07-30T13:34:59+09:00")), false);
-  assert.equal(mobileIsExpired(card, new Date("2026-07-30T13:35:00+09:00")), true);
+  const boundary = new Date(card.expiresAt);
+  assert.equal(mobileIsExpired(card, new Date(boundary.getTime() - 1000)), false);
+  assert.equal(mobileIsExpired(card, boundary), true);
   assert.equal(
     mobileSiteCheckedAt,
     webCards.reduce(

@@ -99,6 +99,7 @@ test("R1必須カテゴリをすべて備える", () => {
 
 test("期限切れ判定は境界時刻で安全側へ切り替わる", () => {
   const card = actionCards[0];
-  assert.equal(isExpired(card, new Date("2026-07-30T13:34:59+09:00")), false);
-  assert.equal(isExpired(card, new Date("2026-07-30T13:35:00+09:00")), true);
+  const boundary = new Date(card.expiresAt);
+  assert.equal(isExpired(card, new Date(boundary.getTime() - 1000)), false);
+  assert.equal(isExpired(card, boundary), true);
 });
