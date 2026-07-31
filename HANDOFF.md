@@ -1,5 +1,12 @@
 # Fresh-thread handoff（2026-07-31 更新／No-Go #2 の Web 側は完了・残りは本番境界と No-Go #1）
 
+**再開方法**: 新セッションで `/resume-handoff /Users/tg/projects/app_development/save_kumamoto/HANDOFF.md`。
+次の担当は実装・検証モデル（sonnet 想定）。設計判断は確定済みなので、上位モデルへ戻す必要はない。
+着手前に必ず `git log --pretty='%h %ad %s' --date=iso -5` で HEAD が `cf93954` 以降かを確認し、
+先行完走している作業を二重実行しないこと。
+
+**最初にやること**: 下の「Scope（残り）」の **B（No-Go #1）** から。A は Human Approval Gate の先にある。
+
 ## Goal
 
 熊本の被災者が「いま何に困っているか」から公式情報へ最短で到達できる読み取り専用アプリ（R1）を、
