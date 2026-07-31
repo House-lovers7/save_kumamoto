@@ -87,14 +87,20 @@ CocoaPods の導入（`brew install cocoapods` → 1.17.0）と `pod install` �
 
 - 失敗箇所は **`node_modules/expo-modules-jsi@57.0.4` の Swift ソース 12ファイル・15エラー**。
   アプリのコードではない。すべて `'weak' must be a mutable variable, because it may change at runtime`
-- 原因[高]: `expo-modules-jsi` は `weak let` を使っている（`apple/Package.swift` は
-  `swift-tools-version: 6.2` を宣言）。一方、**手元の Swift 6.2 は `weak let` を受け付けない**。
-  最小再現で確認済み: `swiftc -swift-version 5` と `-swift-version 6` の**両方**で同じエラー。
-  つまり言語モードの設定問題ではなく、**ツールチェーンが要求バージョンに達していない**。
-- 環境: Xcode 26.0.1 (Build 17A400) / Apple Swift 6.2 (swiftlang-6.2.0.19.9)
+- 原因[高]: `weak let` は **Swift 6.3** で入った機能（SE-0481）。手元は **Swift 6.2** なので
+  構文として存在しない。最小再現で確認済み: `swiftc -swift-version 5` と `-swift-version 6` の
+  **両方**で同じエラーが出る。つまり言語モードの設定問題ではなく、**ツールチェーン不足**。
+- **同一事象の Expo 公式 issue が存在する**: https://github.com/expo/expo/issues/46242
+  「[expo-modules-jsi] Build fails on Xcode 26 / Swift 6.2 (weak let + Sendable mutable property)」。
+  メンテナ（tsapeta）の回答は **「SDK 56 requires Xcode 26.4+ (Swift 6.3), per the upgrade guide」**。
+  本プロジェクトは SDK 57 なので同等以上が必要。**バグではなくバージョン不整合**という整理。
+- **必要な対応: Xcode を 26.4 以上へ更新する**。手元は Xcode 26.0.1 (Build 17A400) / Swift 6.2。
+  更新後は `rm -rf node_modules/expo-modules-jsi/apple/Products` でキャッシュ済み xcframework を
+  消してから再ビルドすること（メンテナ指示）。
+- `nonisolated(unsafe) weak var` を付ける回避策は issue 内で提案されているが、
+  **メンテナが「CIで壊れる可能性がある」として非推奨**としている。採用しない。
 - `node_modules` を書き換える回避はしていない（原本を汚す・次回 install で消えるため）
-
-**次に取る手はユーザー判断待ち**（下記「未決」）。
+- 参考: SE-0481 https://github.com/swiftlang/swift-evolution/blob/main/proposals/0481-weak-let.md
 
 ## Files（本セッションで触ったもの）
 
@@ -126,12 +132,15 @@ commit 済み（`ab372e3` / `36781c7` / `ae1c8e6`）:
 
 ## 未決（次セッション冒頭でユーザーへ確認）
 
-1. **iOS をどうするか**
-   - Xcode を新しいものへ更新して続行するか（App Store 経由のユーザー操作が必要。
-     **ディスク残 26GB / 98%使用** で、Xcode の更新には足りない可能性が高い）
-   - 先にディスクを空けるか（`~/Library/Developer/Xcode/DerivedData` 3.8GB、
-     `apps/mobile/ios` 1.2GB、`~/.gradle` 6.1GB が候補）
-   - iOS は見送り、Android の成果で締めるか
+1. **iOS を続けるなら Xcode 26.4+ への更新が必須**（上記のとおり公式に確定）
+   - 更新は App Store 経由でユーザー操作が必要
+   - **ディスク残 31GB / 97%使用**。本セッションで DerivedData 3.8GB・`apps/mobile/ios` 1.2GB を
+     削除して 26GB → 31GB まで回復させた（`xcrun simctl delete unavailable` は該当なし）
+   - 最大の消費元は `~/Library/Developer/CoreSimulator/Devices` の **48GB / 45台**。内訳は
+     iOS 18.0=12台 / 18.1=11台 / 18.2=11台 / 26.0=11台 / watchOS 15台 / visionOS 3台。
+     Xcode 26.x で使うのは iOS 26.0 系なので、iOS 18.x の 34 台は削除候補
+     （`xcrun simctl delete <UDID>`、ランタイムごと消すなら `xcrun simctl runtime delete`）。
+     **他プロジェクトへ影響するためユーザー判断が要る。未実行。**
 2. **キャラクター／アイコン**（前々回からの持ち越し。くまモンは No-Go 確定）
    - 代替案1（推奨）: 困りごとグリッドに絵記号。ただし現状すでに漢字1文字
      （報/水/食/避/薬/電/道/片、`index.tsx:49-58`）が入っており、これを絵記号へ置き換える判断になる
