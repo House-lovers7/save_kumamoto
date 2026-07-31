@@ -1,8 +1,11 @@
 import Link from "next/link";
-
-const emergencyMode = process.env.NEXT_PUBLIC_EMERGENCY_MODE === "true";
+import { readEmergencyMode } from "@/lib/emergency-mode";
 
 export default function StatusPage() {
+  // リクエストごとに読む。secret は読み出せないため、このページが現在の停止状態を
+  // 確認できる唯一の経路になる。
+  const emergencyMode = readEmergencyMode();
+
   return (
     <main className="status-page">
       <p className="eyebrow">運用ステータス</p>

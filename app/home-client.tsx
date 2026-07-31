@@ -16,8 +16,6 @@ const categories = Object.keys(categoryLabels) as ActionCategory[];
 const needCategories = categories.filter(
   (item): item is Exclude<ActionCategory, "all"> => item !== "all",
 );
-const emergencyMode = process.env.NEXT_PUBLIC_EMERGENCY_MODE === "true";
-
 type TextScale = "standard" | "large" | "xlarge";
 
 const textScales: TextScale[] = ["standard", "large", "xlarge"];
@@ -38,7 +36,15 @@ const categoryIcons: Record<Exclude<ActionCategory, "all">, string> = {
   recovery: "片",
 };
 
-export function HomeClient() {
+export type HomeClientProps = {
+  /**
+   * 緊急停止スイッチ。サーバー側で `readEmergencyMode()` が読んだ値を受け取る。
+   * ここで `process.env` を読んではいけない（クライアントバンドルでは常に false になる）。
+   */
+  emergencyMode: boolean;
+};
+
+export function HomeClient({ emergencyMode }: HomeClientProps) {
   const [municipality, setMunicipality] = useState<(typeof municipalities)[number]>(
     "熊本県全域",
   );
