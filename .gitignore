@@ -30,6 +30,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# wrangler dev の変数（EMERGENCY_MODE の workerd 検証で使う）。secret として読まれるのでコミットしない
+.dev.vars
+.dev.vars.*
 
 # vercel
 .vercel

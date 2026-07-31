@@ -174,9 +174,9 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
 
   return (
     <main className={`app app--text-${textScale}`}>
-      <a className="skip-link" href="#actions">
+      {!emergencyMode && <a className="skip-link" href="#actions">
         困りごとの一覧へ移動
-      </a>
+      </a>}
 
       <div className="emergency-strip" role="region" aria-label="緊急連絡">
         <span>命の危険・火災・救急</span>
@@ -253,7 +253,11 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
         </div>
       </section>
 
-      <nav className="need-grid" aria-label="困りごとから選ぶ">
+      {/*
+        縮退中は絞り込みの操作子を出さない。行き先の #actions ごと消えているため、
+        押しても何も起きないボタンになる。災害時に無反応の操作子を残さない。
+      */}
+      {!emergencyMode && <nav className="need-grid" aria-label="困りごとから選ぶ">
         {needCategories.map((item) => (
           <button
             key={item}
@@ -269,9 +273,9 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
             <span className="need-grid__count">{countsByCategory.get(item) ?? 0}件</span>
           </button>
         ))}
-      </nav>
+      </nav>}
 
-      <section className="controls" aria-label="表示する情報を選ぶ">
+      {!emergencyMode && <section className="controls" aria-label="表示する情報を選ぶ">
         <label>
           <span>市町村</span>
           <select value={municipality} onChange={(event) => changeArea(event.target.value as (typeof municipalities)[number])}>
@@ -289,7 +293,7 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
             onChange={(event) => setQuery(event.target.value)}
           />
         </label>
-      </section>
+      </section>}
 
       {!emergencyMode && <section id="actions" className="action-section" aria-live="polite">
         <div className="section-heading">
