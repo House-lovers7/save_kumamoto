@@ -48,6 +48,17 @@ medical は 15:57 JST に導線を再選定して実確認）。期限は24時�
 | `e62eb77` | 鮮度運用 docs 更新（OPERATIONS 第2/5章・README・RELEASE_AUDIT・HANDOFF） |
 | `d507f86` | medical カードの医療導線を再選定し 14/14 カードの鮮度確認を完了（16:00台のセッション） |
 | `1284e10` | 独立 diff レビュー（app-reviewer・重大指摘ゼロ）の指摘2件（旧4時間表記）を修正 |
+| `a67ac26` | No-Go #1 の全14カード解消と medical 新導線を docs へ反映し、本 handoff を更新 |
+
+### 直近セッション（2026-07-31 16:00台）で触ったファイル
+
+`lib/disaster-data.ts`（medical カードの `sourceName`/`sourceUrl` と `medicalTimes`。旧 `staleMedicalTimes` は廃止）/
+`apps/mobile/src/data/actions.ts`（`npm run gen:mobile-data` の生成物。手編集しない）/
+`docs/OPERATIONS.md`（第2章 夜間フェイルセーフ・第5章 現状・第4章末の設計根拠）/
+`README.md`（No-Go #1）/ `docs/RELEASE_AUDIT.md`（公開停止条件1）/ `HANDOFF.md`。
+
+**次の担当**: 実装・検証モデル（sonnet 想定）。設計判断は確定済みで上位モデルへ戻す必要はない。
+最初のタスクは冒頭に書いた鮮度の毎日巡回（期限は 2026-08-01 15:01 / 15:57 JST）。
 
 ### 直した欠陥［高］
 
