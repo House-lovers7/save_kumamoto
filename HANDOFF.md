@@ -115,8 +115,10 @@ cd /Users/tg/projects/app_development/save_kumamoto/apps/mobile
 npx expo run:android            # --device は付けない（adb シリアルは受け付けない）
 ```
 
-前回のビルドログ（途中まで）: セッション固有の scratchpad にあるため次セッションでは消える。
-再実行してログを取り直すこと。
+前セッションのビルドログ（このhandoff作成時点でまだ進行中だったもの。残っていれば読める）:
+`/private/tmp/claude-501/-Users-tg-projects-app-development-save-kumamoto/69acbe78-5362-4a1d-8faf-4b84be6868cd/scratchpad/android-build.log`
+ビルドプロセスは止めずにセッションを終えたので、`adb shell pm list packages | grep imadousuru` で
+インストール済みか先に確認するとよい（済んでいればビルドをやり直さずに検証へ入れる）。
 
 ## Remaining（優先順）
 
