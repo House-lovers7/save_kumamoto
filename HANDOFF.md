@@ -1,9 +1,13 @@
-# Fresh-thread handoff（2026-07-31 更新／No-Go #2 の Web 側は完了・残りは本番境界と No-Go #1）
+# Fresh-thread handoff（2026-07-31 15:30 更新／No-Go #1 は13/14解消・残りは medical 導線・本番境界）
 
 **再開方法**: 新セッションで `/resume-handoff /Users/tg/projects/app_development/save_kumamoto/HANDOFF.md`。
 次の担当は実装・検証モデル（sonnet 想定）。設計判断は確定済みなので、上位モデルへ戻す必要はない。
-着手前に必ず `git log --pretty='%h %ad %s' --date=iso -5` で HEAD が `cf93954` 以降かを確認し、
+着手前に必ず `git log --pretty='%h %ad %s' --date=iso -5` で HEAD が `e62eb77` 以降かを確認し、
 先行完走している作業を二重実行しないこと。
+
+**次セッション冒頭でやること**: 2026-07-31 の3コミット（`d5dbc2a` / `2068d45` / `e62eb77`）の
+独立 diff レビューが未実施（Fable の context guard により持ち越し）。
+`app-reviewer` で `git diff ba75e8d..e62eb77` をレビューしてから次の作業へ進むこと。
 
 **最初にやること**: 下の「Scope（残り）」の **B（No-Go #1・medical カードの医療導線再選定）** から。A は Human Approval Gate の先にある。
 
@@ -14,7 +18,9 @@ Web とネイティブで同じ品質・同じ内容で提供する。情報が�
 鮮度と失効を正直に出すことを最優先の品質基準とする。
 
 **No-Go #2（訂正・停止体制）の Web 側は、コード・回帰テスト・実測証拠・運用文書まで完了した。**
-残るのは本番 Workers での実操作（デプロイ承認が要る）と、**No-Go #1（全14カードが期限切れ）**。
+**No-Go #1 は 2026-07-31 の公式ページ再確認（15:01/15:09 JST）で13/14カード解消**。medical カード1件のみ
+医療導線が未確認のため失効表示のまま。期限は24時間巡回制（毎日1回再確認しないと再失効する）。
+残るのは medical 導線の再選定と、本番 Workers での実操作（デプロイ承認が要る）。
 
 ## Decisions（確定済み。覆さないこと）
 
@@ -35,6 +41,9 @@ Web とネイティブで同じ品質・同じ内容で提供する。情報が�
 | `348074c` | 実測証拠 `docs/qa/emergency-mode-2026-07-31/` ＋再現用 `scripts/qa/hydration-check.mjs` |
 | `b35aa43` | `docs/OPERATIONS.md`（訂正・停止の運用手順） |
 | `c6b5985` | `README.md` と `docs/RELEASE_AUDIT.md` の更新 |
+| `d5dbc2a` | 失効境界テストをカード値から動的導出へ（鮮度更新のたびに壊れない回帰ゲート） |
+| `2068d45` | 公式6URL再確認（WebFetch 実測）に基づき13カードの鮮度更新・期限24時間へ |
+| `e62eb77` | 鮮度運用 docs 更新（OPERATIONS 第2/5章・README・RELEASE_AUDIT・HANDOFF） |
 
 ### 直した欠陥［高］
 
