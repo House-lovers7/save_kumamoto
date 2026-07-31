@@ -1,4 +1,4 @@
-# Fresh-thread handoff（2026-07-31 更新／Android 実描画QA 完了・iOS はツールチェーンでブロック）
+# Fresh-thread handoff（2026-07-31 更新／No-Go #2 の中核欠陥を修正・残りは未着手）
 
 ## Goal
 
@@ -6,231 +6,229 @@
 Web とネイティブで同じ品質・同じ内容で提供する。情報がないときに「利用可能」と推測せず、
 鮮度と失効を正直に出すことを最優先の品質基準とする。
 
-本セッションの Goal は No-Go #4（ネイティブ実機・署名境界）の突破。
-**Android はエミュレータ相当まで達成。iOS は Xcode のバージョン不足で未達。**
+本セッションの Goal は **No-Go #2（訂正・停止体制）を Web 限定で潰す**こと。
+ユーザー承認済みの決定: 主軸 = No-Go #2 / 停止スイッチの範囲 = **Web のみ**（ネイティブは対象外）。
 
-## 前セッション handoff の誤りの訂正
+**コード側の中核は完了。テストと文書は未着手。** セッション使用量 97% でコンテキストガードにより中断。
 
-前回の handoff は「Android のビルド完走とアプリ起動は未確認」で終わっていたが、
-**ビルドは handoff が書かれた後に完走していた**。本セッション冒頭のログ確認で判明。
+## Decisions（このセッションで確定。覆さないこと）
 
-- `BUILD SUCCESSFUL in 6m 1s` / APK 生成 / インストール / Metro が 1403 modules をバンドル
-- JDK 21 でコンパイル段階が落ちる懸念は空振り（Gradle が `~/.gradle/jdks/eclipse_adoptium-17` を自前調達）
+1. 停止フラグはサーバー側だけが読み、クライアントへは **props で渡す**
+2. 環境変数名は **`EMERGENCY_MODE`**。`NEXT_PUBLIC_` は**絶対に付けない**（理由は下記）
+3. **infra を足さない**（KV / D1 / R2 / Durable Objects なし）
+4. ネイティブの停止経路（EAS Update / OTA）は今回対象外。ただし**ストア申請の必須前提条件**として文書へ明記する
+5. `lib/disaster-data.ts` のカード値は触らない（No-Go #1 は別件。公式ページ再確認なしの期限延長は鮮度の捏造）
 
-つまり本セッションの実質的な出発点は「証拠採取」だった。再ビルドは不要だった。
+## 本セッションで発見した欠陥と、その修正（commit `80ec958`）
 
-## 本セッションで実測したこと（boundary evidence）[高]
+### 欠陥: 緊急停止スイッチがブラウザ側で効いていなかった［高］
 
-すべて Android エミュレータ Pixel_8_API_35 / API 35 / density 420 の実描画。
-証拠は `apps/mobile/scripts/qa/` のスクリプトで採取（スクリーンショットと dp 実測）。
+前回 handoff には無かった。No-Go #2 は「再デプロイが要る（遅い）」だけでなく
+**そもそも止まらない**という問題を含んでいた。
 
-| 項目 | 結果 |
-|---|---|
-| ネイティブ実描画（全画面） | PASS |
-| 文字倍率 9通り（OS 1.0/1.3/2.0 × アプリ内 標準/大/特大、実効最大2.76倍） | 破綻2件を検出→修正済み |
-| ダークモード実切替（`useColorScheme()` + `automatic`） | PASS |
-| タップ領域（完全表示時） | 44dp未満 0件 / 44〜48dp 5件（Materialの48dp未達） |
-| 119・110 → ダイヤラーに番号が入る（発信なし） | PASS |
-| 外部リンクの確認ダイアログ（位置情報・Cookie の断り）→「やめる」で復帰 | PASS |
-| 画面遷移 /offline-guides・/about | ヘッダー戻るはPASS、システムBACKで不具合検出→修正済み |
-| 全14カード期限切れ時の stale シグナルと「まずやること」の残存 | PASS |
-| `Platform.OS` → 「Android版 1.0.0」 | PASS |
-| a11y ロール変換（radio→RadioButton+SELECTED、button→Button） | PASS |
-| TalkBack 起動とアプリウィンドウへのアクセシビリティフォーカス | PASS |
-| 機械ゲート（web lint / test 13件 / 生成物差分ゼロ / mobile typecheck / lint / export:all） | PASS |
-| Expo Doctor | 20/20 |
-| npm audit --omit=dev | web 0件 / mobile moderate 11件（すべてExpoビルドツール由来、前回と同じ） |
+| 層 | 修正前の `NEXT_PUBLIC_EMERGENCY_MODE` の扱い | 結果 |
+|---|---|---|
+| rsc / ssr バンドル | `process.env` を実行時に読む | 縮退した初期HTMLを返す |
+| client バンドル | `process.env` が丸ごと `{}` に置換され ``h={}.NEXT_PUBLIC_EMERGENCY_MODE===`true` `` | **常に false** |
 
-## 修正した不具合（すべて再ビルドして実描画で直ったことを確認）
+`app/home-client.tsx` は `"use client"` なので、SSR で消えたカードが **hydration 後に復活**していた。
+一方 `app/status/page.tsx` は Server Component（`"use client"` 無し）なので正しく動く。
+つまり**運用者の `/status` だけ「緊急縮退中」と出て、利用者の画面にはカードが出続ける**。
 
-1. **システムBACKでアプリが終了する**[重大]
-   `app.json` の `predictiveBackGestureEnabled: true` が `android:enableOnBackInvokedCallback="true"`
-   を生成しており、Android 公式ドキュメントの記述どおり `KEYCODE_BACK` による傍受が無効化されていた。
-   /offline-guides と /about からBACKするとアプリごとランチャーへ抜けた。ヘッダーの戻る矢印は正常
-   だったため経路で挙動が割れていた。既定（無効）へ戻し、**BACKでホームへ戻ることを実描画で確認済み**。
-2. **「特大」でタイトルの行が重なる**[重大]
-   `fontSize` だけ倍率を掛け `lineHeight` を固定値のままにしていた。`cardTitle` は
-   21×1.38=28.98 に対し `lineHeight: 29` で行間比 1.00。`localTitle` 0.97 / `privacyTitle` 0.96 も同様。
-   固定 `lineHeight` を倍率へ追従させ、**衝突が消えたことをスクリーンショットで確認済み**。
-3. **文字サイズ設定が /offline-guides と /about に効かない**[重大]
-   この2画面は `scale` を一切参照しておらず、ホームで特大にしても標準で描画されていた。
-   `src/use-text-scale.ts` に設定の読み書きを集約して3画面で共有。**特大で表示されることを確認済み**。
-4. 119/110・「期限切れ」タグ・件数・「公式サービスではありません」の断り書きも倍率に追従させた。
+### さらに: README が載せていた手順は「効かない」のではなく「有害」だった［高］
 
-## handoff の想定が外れた点（記録しておく）
+`README.md:129-137` の `NEXT_PUBLIC_EMERGENCY_MODE=true npm run build` は使ってはいけない。
+`node_modules/vinext/dist/index.js:1772-1776` の `getNextPublicEnvDefines()` がビルドプロセスの
+`NEXT_PUBLIC_*` を per-key define 化し、同 `:604` の `define: defines` で**全環境（rsc/ssr 含む）へ適用**する。
+誰かが `NEXT_PUBLIC_EMERGENCY_MODE=false` を付けて建てると**サーバー側にも `false` が焼き付き、
+以後どの環境変数を変えても永久に停止できなくなる**。だから変数名から接頭辞を外した。
 
-前回 handoff は「OS倍率とアプリ内倍率の**二重適用**」を最大の懸念[高]としていたが、
-**実描画では破綻しなかった**。Android は OS のフォントスケールを `fontSize` と `lineHeight` の
-両方に掛けるため比率が保たれる。実効2.76倍でも折り返して読める。
+### 実行時 env が Workers に届く前提条件（確認済み）［高］
 
-したがって `maxFontSizeMultiplier` による上限は入れていない。低視力の利用者から拡大手段を
-奪う方が害が大きい。実際の破綻は「アプリ内倍率だけが `fontSize` に掛かる」ことによる行間比の崩れだった。
+`dist/server/wrangler.json` は `compatibility_flags:["nodejs_compat"]` / `compatibility_date:"2026-07-28"`。
+wrangler の `isProcessEnvPopulated`（`nodejs_compat` かつ compat date ≥ `2025-04-01`）を満たすため、
+**vars と secrets の両方が `process.env` へ載る** → 環境変数を変えるだけで再ビルド無しに反映できる。
+compat date はプラグイン既定値に依存していただけなので `vite.config.ts` で明示固定した。
 
-## 未検証のまま残っていること
+## 実測した boundary evidence［高］
 
-- **TalkBack の実発話**。TalkBack の起動とアクセシビリティフォーカスまでは確認したが、
-  読み上げ文字列を取得する手段がない。`uiautomator dump` は「重要でないビュー」も含む可能性があり、
-  TalkBack の読み上げ対象と同一とは言えない。したがって
-  **「Pressable の子テキストが二重に読まれる」という指摘自体が未確認**。
-  対策として `importantForAccessibility="no-hide-descendants"`（RN公式が「ビューとその子を
-  支援技術から無視させる」と明記する値）を入れたが、**効果は未検証**。
-  なお最初に入れた `"no"` は公式仕様上「イベントを発火しない」だけでツリーからは消えないため誤りだった。
-- **物理実機**。実タッチ、実ディスプレイのコントラスト、実機ジェスチャ、低速回線。
-- **60秒 tick**（`index.tsx:90`）。全カードが既に期限切れで境界をまたげず、素直に観測できなかった。
-- **iOS 全般**（下記のブロッカー）。
+`npm test` のビルド成果物に対し、**同一ビルドのまま環境変数だけを変えて**実測:
 
-## iOS のブロッカー（本セッション最大の未達）
+| 条件 | `/` の `action-section` | 緊急縮退モード | `/status` | RSCペイロード |
+|---|---|---|---|---|
+| OFF | 1 | 0 | 通常表示 | — |
+| `EMERGENCY_MODE=true` | **0** | **1** | **緊急縮退中 ×2** | **`emergencyMode\":true`** |
 
-`npx expo run:ios --device "iPhone SE (3rd generation)"` が **xcodebuild error code 65** で失敗。
-CocoaPods の導入（`brew install cocoapods` → 1.17.0）と `pod install` は成功しており、
-失敗はその先のコンパイル段階。
+- ON で「まずやること」も 0 件（カードごと消えている）
+- `grep -rl 'EMERGENCY_MODE' dist/client/assets/` → **混入なし**
+- RSC ペイロードに値が載る＝**hydration 後も止まる**（今回のバグの直接の修正証明）
+- `npm run lint` PASS / `npm test` **13件 PASS** / `npm run gen:mobile-data` 後 `git status` 空
 
-- 失敗箇所は **`node_modules/expo-modules-jsi@57.0.4` の Swift ソース 12ファイル・15エラー**。
-  アプリのコードではない。すべて `'weak' must be a mutable variable, because it may change at runtime`
-- 原因[高]: `weak let` は **Swift 6.3** で入った機能（SE-0481）。手元は **Swift 6.2** なので
-  構文として存在しない。最小再現で確認済み: `swiftc -swift-version 5` と `-swift-version 6` の
-  **両方**で同じエラーが出る。つまり言語モードの設定問題ではなく、**ツールチェーン不足**。
-- **同一事象の Expo 公式 issue が存在する**: https://github.com/expo/expo/issues/46242
-  「[expo-modules-jsi] Build fails on Xcode 26 / Swift 6.2 (weak let + Sendable mutable property)」。
-  メンテナ（tsapeta）の回答は **「SDK 56 requires Xcode 26.4+ (Swift 6.3), per the upgrade guide」**。
-  本プロジェクトは SDK 57 なので同等以上が必要。**バグではなくバージョン不整合**という整理。
-- **必要な対応: Xcode を 26.4 以上へ更新する**。手元は Xcode 26.0.1 (Build 17A400) / Swift 6.2。
-  更新後は `rm -rf node_modules/expo-modules-jsi/apple/Products` でキャッシュ済み xcframework を
-  消してから再ビルドすること（メンテナ指示）。
-- `nonisolated(unsafe) weak var` を付ける回避策は issue 内で提案されているが、
-  **メンテナが「CIで壊れる可能性がある」として非推奨**としている。採用しない。
-- `node_modules` を書き換える回避はしていない（原本を汚す・次回 install で消えるため）
-- 参考: SE-0481 https://github.com/swiftlang/swift-evolution/blob/main/proposals/0481-weak-let.md
+## Files（commit `80ec958`）
 
-## Files（本セッションで触ったもの）
+- `lib/emergency-mode.ts`（新規）— `EMERGENCY_MODE_ENV_KEY` と `readEmergencyMode()`。読み取りの唯一の実装。
+  「NEXT_PUBLIC_ を付けるな」「client から呼ぶな」「トップレベルで確定させるな」をコメントで明記
+- `app/page.tsx` — `<HomeClient emergencyMode={readEmergencyMode()} />`
+- `app/status/page.tsx` — トップレベル `const` を関数内の `readEmergencyMode()` 呼び出しへ
+- `app/home-client.tsx` — `process.env` 参照を削除し `HomeClientProps { emergencyMode: boolean }` で受ける
+- `vite.config.ts` — `compatibility_date: "2026-07-28"` を明示（populate 条件の固定）
 
-commit 済み（`ab372e3` / `36781c7` / `ae1c8e6`）:
+## Scope（残り。順番どおりに）
 
-- `apps/mobile/app.json` — `predictiveBackGestureEnabled` を削除
-- `apps/mobile/src/use-text-scale.ts`（新規）— 文字サイズ設定を3画面で共有するフック
-- `apps/mobile/src/app/index.tsx` — `createStyles(palette, scale)` 化して行間を倍率追従、
-  安全上重要な文字も追従、`importantForAccessibility="no-hide-descendants"` 付与
-- `apps/mobile/src/app/offline-guides.tsx` / `about.tsx` — 倍率を反映
-- `apps/mobile/AGENTS.md` — v55 → SDK 57 の齟齬を修正し、CNG と実描画QAの手順を追記
-- `README.md` — No-Go #4 を実測結果へ更新（エミュレータ検証済みと実機未検証を分けて記載）
+計画の全文: `/Users/tg/.claude/plans/users-tg-projects-app-development-save-adaptive-grove.md`
 
-触っていない（意図的）:
+1. **`app/home-client.tsx`: 縮退中の死んだ操作子を隠す**（未着手・小）
+   困りごとグリッド（`nav.need-grid`）と市町村・検索（`section.controls`）を `{!emergencyMode && ...}` で包む。
+   `selectNeed` は `document.getElementById("actions")` へスクロールするが、縮退中は `#actions` が
+   存在せず**押しても何も起きない**。災害時に無反応のボタンを残さない。
+   119/110 の `emergency-strip` は条件の外なので残る（残すのが正しい）。
+2. **`tests/emergency-mode.test.mjs`（新規）— 機械ゲート**（未着手）
+   既存 `tests/rendered-html.test.mjs` の2パターン（`dist/server/index.js` をキャッシュ破棄 import して
+   `worker.fetch` を直接呼ぶ／ソース文字列で契約を止める）にそのまま倣う。
+   **ビルドは1回で足りる**（サーババンドルは `keepProcessEnv:true` で建つので実行時読み取りが残る。
+   テスト内で `process.env.EMERGENCY_MODE` を差し替え、`finally` で復元）。
+   **この方式自体がビルド時固定への退行を検出する** — 値が焼き付けば env を変えても出力が変わらず必ず落ちる。
+   検証する6点:
+   1. ON: 「緊急縮退モード」が出て `action-section` と「まずやること」が消える
+   2. ON: **RSC ペイロードに `"emergencyMode":true` が載る**（本命）
+   3. OFF（未設定 / `"false"`）: 通常表示へ戻りペイロードは `false`
+   4. `/` と `/status` が同一判定
+   5. `app/home-client.tsx` に `process.env` と `NEXT_PUBLIC_` が現れない（退行検出）
+   6. `dist/client/assets/*.js` に `EMERGENCY_MODE` 混入なし／`dist/server/wrangler.json` が
+      `nodejs_compat` かつ `compatibility_date >= "2025-04-01"`（populate 前提条件の機械固定）
+   注: `tests/rendered-html.test.mjs` は通常表示前提なので、シェルに `EMERGENCY_MODE=true` が
+   残っていると落ちる。これは望ましい挙動なので変更しない。
+3. **`.gitignore` に `.dev.vars` を追加**（現状 `.env*` はあるが `.dev.vars` が無い）
+4. **workerd 経路のローカル検証**（未実施・重要）
+   ```bash
+   printf 'EMERGENCY_MODE=true\n' > .dev.vars && npm run dev &
+   curl -s localhost:3000/ | grep -o '緊急縮退モード'
+   kill %1 && rm .dev.vars
+   ```
+   実測済みの証拠は Node の `process.env` 経路であり、**workerd が bindings から `process.env` を
+   埋める鎖そのものは未通過**。`.dev.vars` → wrangler `getVarsForDev` → miniflare bindings →
+   workerd populate は本番と同じ経路なので、これだけは通しておくこと。
+   注意: `vinext dev` は**シェル env が効かない**（`CLOUDFLARE_INCLUDE_PROCESS_ENV` 既定 false）。`.dev.vars` を使う。
+5. **ブラウザ目視**（未実施）: `EMERGENCY_MODE=true npm run start` で開き、(a) Console に hydration 警告が
+   出ない (b) 読み込み直後に消えていたカードが数百ms後に**復活しない**
+6. **`docs/OPERATIONS.md`（新規）**（未着手）— 章立ては計画ファイル参照。
+   `[要記入]`（実在の人物・連絡先。**でっち上げ厳禁**）と `[提案]` を行単位で分離する凡例を冒頭に。
+   1 位置づけ / 2 役割と連絡体制 / 3 停止のランブック / 4 訂正のランブック / 5 情報の鮮度運用 /
+   6 公開判定チェックリスト / 7 UIへの反映
+7. **`README.md` 更新**（未着手）
+   - `:129-137`「## 緊急縮退」を**全面差し替え**（現行手順は有害。上記参照）
+   - `:217-219` No-Go #2 / `:222-236` No-Go #4（ネイティブに停止経路が無い旨）
+   - `:159`「Webテスト：8件成功」は実数と食い違い（現状13件、テスト追加後は増える）
+   - `:243-253` リリース手順 / `:255-267` 主なファイル（`lib/emergency-mode.ts` と `docs/OPERATIONS.md`）
+8. **`docs/RELEASE_AUDIT.md` 更新**（未着手）
+   `:19` の「運用停止」行を `[低] 未達` → `[中]`、`:42-52` 公開停止条件 #3 の具体化、
+   `:54-58` Rollback の差し替え、「## 停止の到達範囲」新設
 
-- `lib/disaster-data.ts` の値（公式ページ再確認なしの期限延長は鮮度の捏造。No-Go #1 は別件）
-- `apps/mobile/android/` `apps/mobile/ios/`（生成物。`.gitignore` 済み。git はクリーン）
-- `node_modules/`（iOS のブロッカーを回避するための改変はしない）
+### 停止の到達範囲（文書に必ずこの粒度で書く）
 
-## 証拠の置き場所
+| 対象 | 届くか | 遅延 |
+|---|---|---|
+| オンライン利用者の次のページ遷移／再読込 | 届く | 次のナビゲーションまで（`public/sw.js` は navigation が network-first） |
+| 開きっぱなしのタブ | 届かない | 利用者が再読込するまで（ポーリング未実装） |
+| オフラインの PWA 利用者 | 届かない | 再接続してナビゲーションするまで |
+| iOS / Android ネイティブ | **一切届かない** | ストア審査を通した新バージョン配布まで（数日〜） |
 
-スクリーンショットと計測結果:
-`/private/tmp/claude-501/-Users-tg-projects-app-development-save-kumamoto/e7b5f61a-5281-4857-8f45-e8f8e2c364bd/scratchpad/`
+`isExpired`（`lib/disaster-data.ts:400-402`）による失効表示は端末時計で動くため、停止が届かない
+利用者に対する唯一の自動的な劣化通知。**停止スイッチ ≠ 失効表示**として区別して書くこと。
 
-- `shots/` — 文字倍率9通り × 上部/カード部、ダークモード、修正前後の比較
-- `texts/` — 各条件の画面テキスト
-- `android-run.log` / `android-run2.log` / `ios-run.log` — ビルドログ
-- **セッション終了で消える可能性がある。残す必要があれば `docs/` へ移すこと。**
+### 本番運用の落とし穴（文書に必ず残す）［高］
 
-## 未決（次セッション冒頭でユーザーへ確認）
+`wrangler deploy` は既定で **vars を全消ししてから設定ファイルの vars を入れる**。
+`dist/server/wrangler.json` の `vars` は `{}` なので、ダッシュボードで設定した plain text var は
+**次のデプロイで消える**（＝停止中に誰かが文言修正をデプロイして案内が復活する事故）。
+secrets はデプロイで消えず、かつ `process.env` に載る。
 
-1. **iOS を続けるなら Xcode 26.4+ への更新が必須**（上記のとおり公式に確定）
-   - 更新は App Store 経由でユーザー操作が必要。**ディスクは確保済み（下記）**
-   - 更新後の手順:
-     ```bash
-     rm -rf apps/mobile/node_modules/expo-modules-jsi/apple/Products   # メンテナ指示
-     cd apps/mobile && npx expo run:ios --device "iPhone 16"           # iOS 26.0 系のみ残存
-     ```
-   - iPhone SE (3rd gen) は iOS 18.x 側にしか無かったため削除済み。小画面で試すなら
-     Xcode から iOS 26.0 の SE 系デバイスを新規作成すること
+- 停止: `npx wrangler secret put EMERGENCY_MODE`（値 `true`）
+- 解除: `npx wrangler secret delete EMERGENCY_MODE`
+- 確認: `/status`（secret は読み出せないので、これが現在状態の唯一のシングルソース）
+- plain var で運用するなら全デプロイで `--keep-vars` を固定
 
-### 本セッションで実施したディスク確保（ユーザー承認済み）
+**変えてはいけないもの**: `nodejs_compat` を外さない／compat date を `2025-04-01` より前へ下げない／
+変数名に `NEXT_PUBLIC_` を付けない／`vinext build --prerender-all` を使わない（`/` が静的化されると env が効かない）
 
-**26GB → 45GB（コンテナ実値 48.2GB）まで回復。** 内訳:
+## Non-Scope（触らない）
 
-- `~/Library/Developer/Xcode/DerivedData` 3.8GB 削除（純粋なビルドキャッシュ）
-- `apps/mobile/ios` 1.2GB 削除（`prebuild` で再生成できる生成物。`.gitignore` 済み）
-- **iOS 18.0 / 18.1 / 18.2 のシミュレータ 34台を削除**（`~/.../CoreSimulator/Devices` 48GB → 21GB）。
-  iOS 26.0 の 11台、watchOS 15台、visionOS 3台は残した
-- APFS の解放は非同期で、`df` に反映されるまで数分かかった（削除直後は +1GB しか見えなかった）
-
-未実行（さらに要るとき用）: 使われなくなった **iOS 18.0/18.1/18.2 のランタイム本体**
-（`xcrun simctl runtime delete <UDID>`。Disk Images 合計 67.8GB のうちの3つ）。
-再取得は1本あたり数GBのダウンロードになるため、必要になるまで残している。
-`~/.gradle` 6.1GB と `~/.npm` 3.7GB も未削除。
-2. **キャラクター／アイコン**（前々回からの持ち越し。くまモンは No-Go 確定）
-   - 代替案1（推奨）: 困りごとグリッドに絵記号。ただし現状すでに漢字1文字
-     （報/水/食/避/薬/電/道/片、`index.tsx:49-58`）が入っており、これを絵記号へ置き換える判断になる
-   - 代替案2: オリジナルの控えめなアプリアイコン（ストア申請時にはどのみち要る）
-   - 制約: 119/110 の導線の隣にマスコットを置かない
-3. **タップ領域 44〜48dp の5件**（119/110/文字×3）。iOS HIG の44ptは満たすが
-   Material の48dpには未達。上げるとレイアウトが変わるので未着手。
+- `lib/disaster-data.ts` のカード値（No-Go #1）
+- `apps/mobile/` のコード
+- KV / D1 / R2 / Durable Objects の追加、依存追加
+- deploy / push / Cloudflare の secret 設定 / ストア申請 / メール（すべて Human Approval Gate。remote 未設定）
 
 ## Verification（次セッションで最初に流すコマンド）
 
 ```bash
 cd /Users/tg/projects/app_development/save_kumamoto
-npm run lint && npm test                        # 13件
-npm run gen:mobile-data && git status --short    # 差分が出たら正典と生成物がずれている
+npm run lint && npm test                         # 現在 13件（テスト追加後は増える）
+npm run gen:mobile-data && git status --short     # 差分が出たら正典と生成物がずれている
 
-cd apps/mobile
-npm run typecheck && npm run lint && npm run export:all
-npx expo-doctor                                  # 20/20
+# 停止スイッチが同一ビルドのまま効くこと（実測済み。回帰確認用）
+EMERGENCY_MODE=true node -e '
+const u=new URL("./dist/server/index.js",`file://${process.cwd()}/`);
+import(u.href).then(async m=>{
+  const r=await m.default.fetch(new Request("http://localhost/",{headers:{accept:"text/html"}}),
+    {ASSETS:{fetch:async()=>new Response("",{status:404})}},{waitUntil(){},passThroughOnException(){}});
+  const h=await r.text();
+  console.log("action-section:",(h.match(/class="action-section"/g)||[]).length);   // 0 を期待
+  console.log("緊急縮退モード:",(h.match(/緊急縮退モード/g)||[]).length);            // 1 を期待
+  console.log("payload:", (h.match(/emergencyMode[^,}]{0,20}/)||[])[0]);           // true を期待
+});'
+grep -rl 'EMERGENCY_MODE' dist/client/assets/ || echo 'OK: クライアントに混入なし'
 ```
-
-Android の実描画を再開する場合:
-
-```bash
-"$ANDROID_HOME/emulator/emulator" -avd Pixel_8_API_35 -no-snapshot-save -no-boot-anim &
-adb wait-for-device && adb shell getprop sys.boot_completed
-cd apps/mobile && npx expo run:android           # --device は付けない
-python3 scripts/qa/ui.py shot out.png
-python3 scripts/qa/tap_targets.py "ラベル"
-```
-
-**注意**: TalkBack を有効化したら必ず
-`adb shell settings delete secure enabled_accessibility_services` で戻すこと。
-`settings put ... ""` は `Bad arguments` で失敗し、エミュレータ再起動時に TalkBack が復活して
-音声を読み上げ続ける（本セッションで実際に起きた）。
-
-## 実戦投入できるかの評価（2026-07-31 時点）
-
-**できない。止めているのはコードではなく運用。**
-
-技術面は近い。機械ゲートは全緑、Android はエミュレータ実描画で検証済み、残るは iOS 一枚。
-アクセシビリティも本セッションで実効性が出た（文字3段階が全画面で効く、特大で行が重ならない、
-ダークモード実切替、システムBACKで落ちない）。
-
-だが公開を止めている本体は次の2つで、どちらもコードでは解決しない。
-
-1. **全14カードが期限切れ**。「情報がないとき利用可能と推測しない」という設計は正しく機能しており、
-   画面は赤で「保存した情報の期限が切れています」と出す。しかし**正直であることと役に立つことは別**で、
-   中身が全部失効している以上、「最短で公式情報へ到達させる」という約束は今日の被災者に対して
-   果たせていない。No-Go #1 が最優先。
-2. **訂正・停止体制が未確立**。現状は環境変数方式で停止に再デプロイが要り、
-   「管理画面から数分以内」の停止要件を満たさない。誤情報を出したときに引っ込められない
-   災害アプリは公開してはいけない。No-Go #2。
-
-したがって**次に取り組むべきは機能追加ではなく No-Go #1 と #2**。UI をこれ以上磨いても公開判定は動かない。
-
-### ユーザーから受領した新しいニーズ観測（30件超、未着手）
-
-2026-07-31 に「熊本支援アプリ ニーズ観測」として大量の開発示唆を受領した（本セッションでは未処理）。
-大半が求めているのは「給水車が今いるか」「冷房が動いているか」といった**現在の稼働状況**であり、
-自治体・現場からの更新経路がなければ原理的に出せない。本アプリの現在の境界
-（読み取り専用・投稿を受け付けない）を変える判断を含む。
-
-次セッションでの仕分け案:
-
-- **読み取り専用のまま着手できる**: 給水地点の用途と水質検査状態の強制表示（生活用水を飲料水と
-  誤認させない）、配送可否の正規化（発送可/受取可/営業所のみ/停止）、支援制度の期限と手続き順序
-  （支払い前に申請、修理前写真）
-- **運用連携が前提で今は着手すべきでない**: 給水車のリアルタイム在否、避難所の暑熱ステータス、
-  要配慮者の移送調整、災害ごみの搬出支援受付、支援者のQR認証
-
-一般利用者の投稿だけで「利用可能」と判定しない、という現行の制約は仕分けの全案で維持する。
 
 ## Acceptance
 
-判定: **Android はエミュレータ相当まで `verified`、iOS と物理実機は `boundary_unverified`。**
+- Web の停止スイッチ: **コード側は `verified`（ローカル Node 経路の実測）**
+- 判定は全体として **`implementation_complete_boundary_unverified` のまま**
+- No-Go #2 を `verified` にするには次が要る:
+  (a) 本番 Workers での実操作と反映時間の実測（デプロイ承認後）
+  (b) 停止判断者・訂正担当者・問い合わせ先・対応可能時間の確定（`docs/OPERATIONS.md` の `[要記入]`）
+  (c) オフライン利用者とネイティブへは届かないという範囲を運用者が受諾すること
 
-No-Go #4 は消えていない。エミュレータで採れた証拠で全部消したことにしない。
-deploy / push / ストア申請 / メールはユーザー明示承認後のみ。remote 未設定のため push 先は存在しない。
+## 未検証のまま残っていること
+
+- **workerd 経路**（Scope 4）。実測は Node の `process.env` 経路のみ。workerd が bindings から
+  `process.env` を埋める鎖は未通過。secret_text にも populate されるかは wrangler が vars と
+  secrets を同列に扱うコードからの推論［中］
+- **ブラウザでの hydration 目視**（Scope 5）。RSC ペイロードに値が載ることは確認したが、実ブラウザで
+  カードが復活しないことの目視は未実施
+- **本番 Workers での反映実時間**。デプロイ承認後にしか測れない
+- `Cache-Control` 未設定の HTML がエッジ・中間プロキシで実際にキャッシュされるか［中］。
+  必要なら `worker/index.ts` で HTML に `no-cache`（`no-store` は bfcache を殺すので不可）。今回は範囲外
+
+## 前セッションから引き継いだ未決（手つかず）
+
+1. **iOS**: `npx expo run:ios` が xcodebuild error 65。原因は `expo-modules-jsi` の `weak let`（Swift 6.3 / SE-0481）で、
+   手元は Swift 6.2。Expo 公式 issue https://github.com/expo/expo/issues/46242 でメンテナが
+   「SDK 56 requires Xcode 26.4+」と回答。**Xcode 26.4+ への更新が必須**（App Store 経由・ユーザー操作）。
+   ディスクは確保済み（26GB → 45GB）。更新後は
+   `rm -rf apps/mobile/node_modules/expo-modules-jsi/apple/Products` してから
+   `cd apps/mobile && npx expo run:ios --device "iPhone 16"`。
+   `nonisolated(unsafe) weak var` 回避策はメンテナが非推奨としているので採用しない。
+2. **キャラクター／アイコン**（くまモンは No-Go 確定）。困りごとグリッドは現状 漢字1文字（報/水/食/避/薬/電/道/片）。
+   119/110 の導線の隣にマスコットを置かない。
+3. **タップ領域 44〜48dp の5件**（119/110/文字×3）。iOS HIG の44ptは満たすが Material の48dp未達。
+4. **Android の残課題**: TalkBack の実発話、物理実機、60秒 tick の境界跨ぎ。
+   注意: TalkBack を有効化したら必ず `adb shell settings delete secure enabled_accessibility_services` で戻す。
+
+## 受領済みで未処理のニーズ観測（30件超）
+
+2026-07-31 受領。大半は「給水車が今いるか」「冷房が動いているか」といった**現在の稼働状況**を求めており、
+自治体・現場からの更新経路がなければ原理的に出せない。読み取り専用という現在の境界を変える判断を含む。
+
+- **読み取り専用のまま着手できる**: 給水地点の用途と水質検査状態の強制表示（生活用水を飲料水と誤認させない）、
+  配送可否の正規化（発送可/受取可/営業所のみ/停止）、支援制度の期限と手続き順序（支払い前に申請、修理前写真）
+- **運用連携が前提で今は着手すべきでない**: 給水車のリアルタイム在否、避難所の暑熱ステータス、
+  要配慮者の移送調整、災害ごみの搬出支援受付、支援者のQR認証
+
+一般利用者の投稿だけで「利用可能」と判定しない、という現行の制約は全案で維持する。
+
+## 実戦投入できるかの評価
+
+**まだできない。** ただし本セッションで No-Go #2 の**技術的な中核は解けた**（停止が実際に効くようになった）。
+残るのは運用側（停止判断者・問い合わせ先の確定）と、**No-Go #1（全14カードが期限切れ）**。
+No-Go #1 はコードでは解決しない。中身が全部失効している以上「最短で公式情報へ到達させる」という
+約束は今日の被災者に対して果たせていない。UI をこれ以上磨いても公開判定は動かない。
