@@ -1,4 +1,4 @@
-# Fresh-thread handoff（2026-07-31 更新／No-Go #2 の中核欠陥を修正・残りは未着手）
+# Fresh-thread handoff（2026-07-31 更新／No-Go #2 の Web 側は完了・残りは本番境界と No-Go #1）
 
 ## Goal
 
@@ -6,213 +6,142 @@
 Web とネイティブで同じ品質・同じ内容で提供する。情報がないときに「利用可能」と推測せず、
 鮮度と失効を正直に出すことを最優先の品質基準とする。
 
-本セッションの Goal は **No-Go #2（訂正・停止体制）を Web 限定で潰す**こと。
-ユーザー承認済みの決定: 主軸 = No-Go #2 / 停止スイッチの範囲 = **Web のみ**（ネイティブは対象外）。
+**No-Go #2（訂正・停止体制）の Web 側は、コード・回帰テスト・実測証拠・運用文書まで完了した。**
+残るのは本番 Workers での実操作（デプロイ承認が要る）と、**No-Go #1（全14カードが期限切れ）**。
 
-**コード側の中核は完了。テストと文書は未着手。** セッション使用量 97% でコンテキストガードにより中断。
-
-## Decisions（このセッションで確定。覆さないこと）
+## Decisions（確定済み。覆さないこと）
 
 1. 停止フラグはサーバー側だけが読み、クライアントへは **props で渡す**
-2. 環境変数名は **`EMERGENCY_MODE`**。`NEXT_PUBLIC_` は**絶対に付けない**（理由は下記）
+2. 環境変数名は **`EMERGENCY_MODE`**。`NEXT_PUBLIC_` は**絶対に付けない**
 3. **infra を足さない**（KV / D1 / R2 / Durable Objects なし）
-4. ネイティブの停止経路（EAS Update / OTA）は今回対象外。ただし**ストア申請の必須前提条件**として文書へ明記する
-5. `lib/disaster-data.ts` のカード値は触らない（No-Go #1 は別件。公式ページ再確認なしの期限延長は鮮度の捏造）
+4. ネイティブの停止経路（EAS Update / OTA）は対象外。**ストア申請の必須前提条件**として文書化済み
+5. `lib/disaster-data.ts` のカード値は触らない（No-Go #1 は別件。再確認なしの期限延長は鮮度の捏造）
+6. 運用体制（2026-07-31 ユーザー確定）: **停止判断者・訂正担当者・問い合わせ対応は運営者1人が兼務** /
+   窓口は **GitHub Issues** / 対応可能時間は **9:00〜21:00 JST ベストエフォート**
 
-## 本セッションで発見した欠陥と、その修正（commit `80ec958`）
+## このセッションで完了したこと
 
-### 欠陥: 緊急停止スイッチがブラウザ側で効いていなかった［高］
+| commit | 内容 |
+|---|---|
+| `80ec958` | 停止スイッチがブラウザ側で効いていなかった欠陥の修正（前セッション） |
+| `b19b798` | 回帰ゲート `tests/emergency-mode.test.mjs`（8件）＋縮退中の死んだ操作子を非表示 |
+| `348074c` | 実測証拠 `docs/qa/emergency-mode-2026-07-31/` ＋再現用 `scripts/qa/hydration-check.mjs` |
+| `b35aa43` | `docs/OPERATIONS.md`（訂正・停止の運用手順） |
+| `c6b5985` | `README.md` と `docs/RELEASE_AUDIT.md` の更新 |
 
-前回 handoff には無かった。No-Go #2 は「再デプロイが要る（遅い）」だけでなく
-**そもそも止まらない**という問題を含んでいた。
+### 直した欠陥［高］
 
-| 層 | 修正前の `NEXT_PUBLIC_EMERGENCY_MODE` の扱い | 結果 |
-|---|---|---|
-| rsc / ssr バンドル | `process.env` を実行時に読む | 縮退した初期HTMLを返す |
-| client バンドル | `process.env` が丸ごと `{}` に置換され ``h={}.NEXT_PUBLIC_EMERGENCY_MODE===`true` `` | **常に false** |
+1. **停止スイッチがブラウザ側で効いていなかった。** クライアントバンドルでは `process.env` が `{}` に
+   置換されるため、`"use client"` の中で読んでいたフラグは常に false。SSR の初期HTMLだけ縮退し、
+   **hydration 後にカードが復活**していた。Server Component の `/status` だけが正しく動くので、
+   運用者は止めたつもりで利用者には案内が出続けるという最悪の食い違いだった
+2. **README の旧手順は有害だった。** `NEXT_PUBLIC_*` は vinext がビルド時に rsc/ssr を含む全環境へ
+   define する。`false` を付けてビルドするとサーバー側にも焼き付き、以後どの環境変数でも止まらなくなる
+3. **縮退中に無反応の操作子が残っていた。** 困りごとグリッド・市町村/検索・スキップリンクは
+   行き先の `#actions` ごと消えているため、押しても何も起きなかった
 
-`app/home-client.tsx` は `"use client"` なので、SSR で消えたカードが **hydration 後に復活**していた。
-一方 `app/status/page.tsx` は Server Component（`"use client"` 無し）なので正しく動く。
-つまり**運用者の `/status` だけ「緊急縮退中」と出て、利用者の画面にはカードが出続ける**。
+### 実測した boundary evidence［高］
 
-### さらに: README が載せていた手順は「効かない」のではなく「有害」だった［高］
+`docs/qa/emergency-mode-2026-07-31/README.md` に全数値。同一ビルドのまま環境変数だけを変えて計測。
 
-`README.md:129-137` の `NEXT_PUBLIC_EMERGENCY_MODE=true npm run build` は使ってはいけない。
-`node_modules/vinext/dist/index.js:1772-1776` の `getNextPublicEnvDefines()` がビルドプロセスの
-`NEXT_PUBLIC_*` を per-key define 化し、同 `:604` の `define: defines` で**全環境（rsc/ssr 含む）へ適用**する。
-誰かが `NEXT_PUBLIC_EMERGENCY_MODE=false` を付けて建てると**サーバー側にも `false` が焼き付き、
-以後どの環境変数を変えても永久に停止できなくなる**。だから変数名から接頭辞を外した。
+| 経路 | 結果 |
+|---|---|
+| Node 本番サーバ | ON で `action-section` / `need-grid` / `controls` / `skip-link` すべて 0、「緊急縮退モード」1、`tel:119`/`tel:110` は残る、RSC ペイロード `emergencyMode=true`、`/status` 緊急縮退中 |
+| **workerd（miniflare）** | `.dev.vars` 経由で同じ結果。起動ログに `Using secrets defined in .dev.vars` → **secret でも `process.env` に載ることを確認**（従来は推論［中］だった） |
+| **実ブラウザ hydration 後 DOM** | `reactHydrated: true` かつ SW 登録済みの状態で `.action-card` **0件**（対照の通常表示では **14件**検出）。console / log / exception **0件** |
+| クライアントバンドル | `EMERGENCY_MODE` の混入なし |
 
-### 実行時 env が Workers に届く前提条件（確認済み）［高］
+### 回帰ゲートが本物であることの実証［高］
 
-`dist/server/wrangler.json` は `compatibility_flags:["nodejs_compat"]` / `compatibility_date:"2026-07-28"`。
-wrangler の `isProcessEnvPopulated`（`nodejs_compat` かつ compat date ≥ `2025-04-01`）を満たすため、
-**vars と secrets の両方が `process.env` へ載る** → 環境変数を変えるだけで再ビルド無しに反映できる。
-compat date はプラグイン既定値に依存していただけなので `vite.config.ts` で明示固定した。
+`lib/emergency-mode.ts` をトップレベル `const` キャプチャへ変異させると、ソース検査だけでなく
+**実行時の往復テストを含む5件**が落ちる（変異は `git checkout` で復元済み）。
+テストは worker モジュールを1回だけ import して使い回し、その間に env を差し替える設計。
+キャッシュ破棄 import にすると、この退行を検出できなくなるので変えないこと。
 
-## 実測した boundary evidence［高］
+### 検証結果
 
-`npm test` のビルド成果物に対し、**同一ビルドのまま環境変数だけを変えて**実測:
+`npm run lint` PASS / `npm test` **21件 PASS**（13件から +8件）/
+`npm run gen:mobile-data` 後の `git status` 差分なし。
 
-| 条件 | `/` の `action-section` | 緊急縮退モード | `/status` | RSCペイロード |
-|---|---|---|---|---|
-| OFF | 1 | 0 | 通常表示 | — |
-| `EMERGENCY_MODE=true` | **0** | **1** | **緊急縮退中 ×2** | **`emergencyMode\":true`** |
+## Scope（残り）
 
-- ON で「まずやること」も 0 件（カードごと消えている）
-- `grep -rl 'EMERGENCY_MODE' dist/client/assets/` → **混入なし**
-- RSC ペイロードに値が載る＝**hydration 後も止まる**（今回のバグの直接の修正証明）
-- `npm run lint` PASS / `npm test` **13件 PASS** / `npm run gen:mobile-data` 後 `git status` 空
+### A. No-Go #2 を `verified` にする（Human Approval Gate の先）
 
-## Files（commit `80ec958`）
+`docs/OPERATIONS.md` 第6章のチェックリスト 5〜9 が未達。
 
-- `lib/emergency-mode.ts`（新規）— `EMERGENCY_MODE_ENV_KEY` と `readEmergencyMode()`。読み取りの唯一の実装。
-  「NEXT_PUBLIC_ を付けるな」「client から呼ぶな」「トップレベルで確定させるな」をコメントで明記
-- `app/page.tsx` — `<HomeClient emergencyMode={readEmergencyMode()} />`
-- `app/status/page.tsx` — トップレベル `const` を関数内の `readEmergencyMode()` 呼び出しへ
-- `app/home-client.tsx` — `process.env` 参照を削除し `HomeClientProps { emergencyMode: boolean }` で受ける
-- `vite.config.ts` — `compatibility_date: "2026-07-28"` を明示（populate 条件の固定）
+1. **本番 Workers での実操作**（デプロイ承認後）
+   - `npx wrangler secret put EMERGENCY_MODE`（値 `true`）
+   - **別端末**で `/` からカードが消え `/status` が「緊急縮退中」になることを確認
+   - **反映までの実時間を記録**する
+   - 停止中に無害な変更をデプロイし、停止が維持されることを確認（secrets はデプロイで消えない前提の実地確認）
+   - `npx wrangler secret delete EMERGENCY_MODE` で解除
+2. **問い合わせ窓口 URL の確定**。現在 **remote が未設定**で GitHub Issues が存在しない。
+   `docs/OPERATIONS.md` の `[要記入]` を埋める
+3. **ネイティブに停止が届かないことの受諾**（運営者の明示的な同意）
 
-## Scope（残り。順番どおりに）
+### B. No-Go #1（最優先。コードでは解決しない）
 
-計画の全文: `/Users/tg/.claude/plans/users-tg-projects-app-development-save-adaptive-grove.md`
+- 全14カードが `lib/disaster-data.ts` の `contentTimes` を**共有**しており、`expiresAt` は
+  `2026-07-30T13:35+09:00`。**2026-07-31 時点で14件すべて期限切れ**
+- 公式ページを再確認して時刻を更新する以外に解決手段はない。
+  **再確認せずに `expiresAt` だけ延ばすのは鮮度の捏造**
+- 鮮度運用の論点（カテゴリ単位の個別期限 / `checkedAt` だけ更新する軽い確認ルーチン /
+  巡回頻度と期限の釣り合い）は `docs/OPERATIONS.md` 第5章に `[提案]` として整理済み。値は変えていない
 
-1. **`app/home-client.tsx`: 縮退中の死んだ操作子を隠す**（未着手・小）
-   困りごとグリッド（`nav.need-grid`）と市町村・検索（`section.controls`）を `{!emergencyMode && ...}` で包む。
-   `selectNeed` は `document.getElementById("actions")` へスクロールするが、縮退中は `#actions` が
-   存在せず**押しても何も起きない**。災害時に無反応のボタンを残さない。
-   119/110 の `emergency-strip` は条件の外なので残る（残すのが正しい）。
-2. **`tests/emergency-mode.test.mjs`（新規）— 機械ゲート**（未着手）
-   既存 `tests/rendered-html.test.mjs` の2パターン（`dist/server/index.js` をキャッシュ破棄 import して
-   `worker.fetch` を直接呼ぶ／ソース文字列で契約を止める）にそのまま倣う。
-   **ビルドは1回で足りる**（サーババンドルは `keepProcessEnv:true` で建つので実行時読み取りが残る。
-   テスト内で `process.env.EMERGENCY_MODE` を差し替え、`finally` で復元）。
-   **この方式自体がビルド時固定への退行を検出する** — 値が焼き付けば env を変えても出力が変わらず必ず落ちる。
-   検証する6点:
-   1. ON: 「緊急縮退モード」が出て `action-section` と「まずやること」が消える
-   2. ON: **RSC ペイロードに `"emergencyMode":true` が載る**（本命）
-   3. OFF（未設定 / `"false"`）: 通常表示へ戻りペイロードは `false`
-   4. `/` と `/status` が同一判定
-   5. `app/home-client.tsx` に `process.env` と `NEXT_PUBLIC_` が現れない（退行検出）
-   6. `dist/client/assets/*.js` に `EMERGENCY_MODE` 混入なし／`dist/server/wrangler.json` が
-      `nodejs_compat` かつ `compatibility_date >= "2025-04-01"`（populate 前提条件の機械固定）
-   注: `tests/rendered-html.test.mjs` は通常表示前提なので、シェルに `EMERGENCY_MODE=true` が
-   残っていると落ちる。これは望ましい挙動なので変更しない。
-3. **`.gitignore` に `.dev.vars` を追加**（現状 `.env*` はあるが `.dev.vars` が無い）
-4. **workerd 経路のローカル検証**（未実施・重要）
-   ```bash
-   printf 'EMERGENCY_MODE=true\n' > .dev.vars && npm run dev &
-   curl -s localhost:3000/ | grep -o '緊急縮退モード'
-   kill %1 && rm .dev.vars
-   ```
-   実測済みの証拠は Node の `process.env` 経路であり、**workerd が bindings から `process.env` を
-   埋める鎖そのものは未通過**。`.dev.vars` → wrangler `getVarsForDev` → miniflare bindings →
-   workerd populate は本番と同じ経路なので、これだけは通しておくこと。
-   注意: `vinext dev` は**シェル env が効かない**（`CLOUDFLARE_INCLUDE_PROCESS_ENV` 既定 false）。`.dev.vars` を使う。
-5. **ブラウザ目視**（未実施）: `EMERGENCY_MODE=true npm run start` で開き、(a) Console に hydration 警告が
-   出ない (b) 読み込み直後に消えていたカードが数百ms後に**復活しない**
-6. **`docs/OPERATIONS.md`（新規）**（未着手）— 章立ては計画ファイル参照。
-   `[要記入]`（実在の人物・連絡先。**でっち上げ厳禁**）と `[提案]` を行単位で分離する凡例を冒頭に。
-   1 位置づけ / 2 役割と連絡体制 / 3 停止のランブック / 4 訂正のランブック / 5 情報の鮮度運用 /
-   6 公開判定チェックリスト / 7 UIへの反映
-7. **`README.md` 更新**（未着手）
-   - `:129-137`「## 緊急縮退」を**全面差し替え**（現行手順は有害。上記参照）
-   - `:217-219` No-Go #2 / `:222-236` No-Go #4（ネイティブに停止経路が無い旨）
-   - `:159`「Webテスト：8件成功」は実数と食い違い（現状13件、テスト追加後は増える）
-   - `:243-253` リリース手順 / `:255-267` 主なファイル（`lib/emergency-mode.ts` と `docs/OPERATIONS.md`）
-8. **`docs/RELEASE_AUDIT.md` 更新**（未着手）
-   `:19` の「運用停止」行を `[低] 未達` → `[中]`、`:42-52` 公開停止条件 #3 の具体化、
-   `:54-58` Rollback の差し替え、「## 停止の到達範囲」新設
+### C. その他（前セッションから継続）
 
-### 停止の到達範囲（文書に必ずこの粒度で書く）
-
-| 対象 | 届くか | 遅延 |
-|---|---|---|
-| オンライン利用者の次のページ遷移／再読込 | 届く | 次のナビゲーションまで（`public/sw.js` は navigation が network-first） |
-| 開きっぱなしのタブ | 届かない | 利用者が再読込するまで（ポーリング未実装） |
-| オフラインの PWA 利用者 | 届かない | 再接続してナビゲーションするまで |
-| iOS / Android ネイティブ | **一切届かない** | ストア審査を通した新バージョン配布まで（数日〜） |
-
-`isExpired`（`lib/disaster-data.ts:400-402`）による失効表示は端末時計で動くため、停止が届かない
-利用者に対する唯一の自動的な劣化通知。**停止スイッチ ≠ 失効表示**として区別して書くこと。
-
-### 本番運用の落とし穴（文書に必ず残す）［高］
-
-`wrangler deploy` は既定で **vars を全消ししてから設定ファイルの vars を入れる**。
-`dist/server/wrangler.json` の `vars` は `{}` なので、ダッシュボードで設定した plain text var は
-**次のデプロイで消える**（＝停止中に誰かが文言修正をデプロイして案内が復活する事故）。
-secrets はデプロイで消えず、かつ `process.env` に載る。
-
-- 停止: `npx wrangler secret put EMERGENCY_MODE`（値 `true`）
-- 解除: `npx wrangler secret delete EMERGENCY_MODE`
-- 確認: `/status`（secret は読み出せないので、これが現在状態の唯一のシングルソース）
-- plain var で運用するなら全デプロイで `--keep-vars` を固定
-
-**変えてはいけないもの**: `nodejs_compat` を外さない／compat date を `2025-04-01` より前へ下げない／
-変数名に `NEXT_PUBLIC_` を付けない／`vinext build --prerender-all` を使わない（`/` が静的化されると env が効かない）
+1. **iOS**: `npx expo run:ios` が xcodebuild error 65。原因は `expo-modules-jsi` の `weak let`
+   （Swift 6.3 / SE-0481）で、手元は Swift 6.2。Expo 公式 issue
+   https://github.com/expo/expo/issues/46242 でメンテナが「SDK 56 requires Xcode 26.4+」と回答。
+   **Xcode 26.4+ への更新が必須**（App Store 経由・ユーザー操作）。ディスクは確保済み（26GB → 45GB）。
+   更新後は `rm -rf apps/mobile/node_modules/expo-modules-jsi/apple/Products` してから
+   `cd apps/mobile && npx expo run:ios --device "iPhone 16"`。
+   `nonisolated(unsafe) weak var` 回避策はメンテナが非推奨としているので採用しない
+2. **キャラクター／アイコン**（くまモンは No-Go 確定）。困りごとグリッドは現状 漢字1文字（報/水/食/避/薬/電/道/片）。
+   119/110 の導線の隣にマスコットを置かない
+3. **タップ領域 44〜48dp の5件**（119/110/文字×3）。iOS HIG の44ptは満たすが Material の48dp未達
+4. **Android の残課題**: TalkBack の実発話、物理実機、60秒 tick の境界跨ぎ。
+   注意: TalkBack を有効化したら必ず `adb shell settings delete secure enabled_accessibility_services` で戻す
+5. **Expo Doctor / `npm audit --omit=dev`** を UI/UX 反映後に再実行していない
 
 ## Non-Scope（触らない）
 
-- `lib/disaster-data.ts` のカード値（No-Go #1）
+- `lib/disaster-data.ts` のカード値（No-Go #1 として別途扱う）
 - `apps/mobile/` のコード
 - KV / D1 / R2 / Durable Objects の追加、依存追加
-- deploy / push / Cloudflare の secret 設定 / ストア申請 / メール（すべて Human Approval Gate。remote 未設定）
+- deploy / push / remote 追加 / Cloudflare の secret 設定 / ストア申請 / メール（すべて Human Approval Gate）
 
 ## Verification（次セッションで最初に流すコマンド）
 
 ```bash
 cd /Users/tg/projects/app_development/save_kumamoto
-npm run lint && npm test                         # 現在 13件（テスト追加後は増える）
-npm run gen:mobile-data && git status --short     # 差分が出たら正典と生成物がずれている
-
-# 停止スイッチが同一ビルドのまま効くこと（実測済み。回帰確認用）
-EMERGENCY_MODE=true node -e '
-const u=new URL("./dist/server/index.js",`file://${process.cwd()}/`);
-import(u.href).then(async m=>{
-  const r=await m.default.fetch(new Request("http://localhost/",{headers:{accept:"text/html"}}),
-    {ASSETS:{fetch:async()=>new Response("",{status:404})}},{waitUntil(){},passThroughOnException(){}});
-  const h=await r.text();
-  console.log("action-section:",(h.match(/class="action-section"/g)||[]).length);   // 0 を期待
-  console.log("緊急縮退モード:",(h.match(/緊急縮退モード/g)||[]).length);            // 1 を期待
-  console.log("payload:", (h.match(/emergencyMode[^,}]{0,20}/)||[])[0]);           // true を期待
-});'
-grep -rl 'EMERGENCY_MODE' dist/client/assets/ || echo 'OK: クライアントに混入なし'
+npm run lint && npm test                          # 21件 PASS
+npm run gen:mobile-data && git status --short      # 差分が出たら正典と生成物がずれている
 ```
 
-## Acceptance
+停止スイッチの手動確認（ポート3000は OrbStack が塞いでいたので別ポートを使う）:
 
-- Web の停止スイッチ: **コード側は `verified`（ローカル Node 経路の実測）**
-- 判定は全体として **`implementation_complete_boundary_unverified` のまま**
-- No-Go #2 を `verified` にするには次が要る:
-  (a) 本番 Workers での実操作と反映時間の実測（デプロイ承認後）
-  (b) 停止判断者・訂正担当者・問い合わせ先・対応可能時間の確定（`docs/OPERATIONS.md` の `[要記入]`）
-  (c) オフライン利用者とネイティブへは届かないという範囲を運用者が受諾すること
+```bash
+npm run build
+EMERGENCY_MODE=true npm run start -- --port 3123 &
+node -e 'fetch("http://localhost:3123/").then(r=>r.text()).then(h=>{
+  console.log("action-section:", (h.match(/class="action-section"/g)||[]).length);   // 0
+  console.log("緊急縮退モード:", (h.match(/緊急縮退モード/g)||[]).length);              // 1
+  console.log("payload:", (h.match(/emergencyMode[^,}]{0,10}/)||[])[0]);            // true
+})'
+```
 
-## 未検証のまま残っていること
+注: `curl` は hook でブロックされるため node の fetch を使う（ユーザー承認済みの代替手段）。
+実ブラウザでの hydration 確認は `scripts/qa/hydration-check.mjs`（使い方はファイル冒頭）。
 
-- **workerd 経路**（Scope 4）。実測は Node の `process.env` 経路のみ。workerd が bindings から
-  `process.env` を埋める鎖は未通過。secret_text にも populate されるかは wrangler が vars と
-  secrets を同列に扱うコードからの推論［中］
-- **ブラウザでの hydration 目視**（Scope 5）。RSC ペイロードに値が載ることは確認したが、実ブラウザで
-  カードが復活しないことの目視は未実施
-- **本番 Workers での反映実時間**。デプロイ承認後にしか測れない
+## 未検証のまま残っていること（推測で埋めない）
+
+- **本番 Cloudflare Workers での反映実時間**。デプロイ承認後にしか測れない
+- **停止中デプロイで停止が維持されるか**。`wrangler deploy` が vars を全消しし secrets は残す、
+  というコードからの推論［高］だが本番未実施
+- **実利用者への到達遅延**。開いたままのタブ・オフラインPWA・ネイティブへは届かない（設計上の既知の穴）
 - `Cache-Control` 未設定の HTML がエッジ・中間プロキシで実際にキャッシュされるか［中］。
   必要なら `worker/index.ts` で HTML に `no-cache`（`no-store` は bfcache を殺すので不可）。今回は範囲外
-
-## 前セッションから引き継いだ未決（手つかず）
-
-1. **iOS**: `npx expo run:ios` が xcodebuild error 65。原因は `expo-modules-jsi` の `weak let`（Swift 6.3 / SE-0481）で、
-   手元は Swift 6.2。Expo 公式 issue https://github.com/expo/expo/issues/46242 でメンテナが
-   「SDK 56 requires Xcode 26.4+」と回答。**Xcode 26.4+ への更新が必須**（App Store 経由・ユーザー操作）。
-   ディスクは確保済み（26GB → 45GB）。更新後は
-   `rm -rf apps/mobile/node_modules/expo-modules-jsi/apple/Products` してから
-   `cd apps/mobile && npx expo run:ios --device "iPhone 16"`。
-   `nonisolated(unsafe) weak var` 回避策はメンテナが非推奨としているので採用しない。
-2. **キャラクター／アイコン**（くまモンは No-Go 確定）。困りごとグリッドは現状 漢字1文字（報/水/食/避/薬/電/道/片）。
-   119/110 の導線の隣にマスコットを置かない。
-3. **タップ領域 44〜48dp の5件**（119/110/文字×3）。iOS HIG の44ptは満たすが Material の48dp未達。
-4. **Android の残課題**: TalkBack の実発話、物理実機、60秒 tick の境界跨ぎ。
-   注意: TalkBack を有効化したら必ず `adb shell settings delete secure enabled_accessibility_services` で戻す。
 
 ## 受領済みで未処理のニーズ観測（30件超）
 
@@ -228,7 +157,11 @@ grep -rl 'EMERGENCY_MODE' dist/client/assets/ || echo 'OK: クライアントに
 
 ## 実戦投入できるかの評価
 
-**まだできない。** ただし本セッションで No-Go #2 の**技術的な中核は解けた**（停止が実際に効くようになった）。
-残るのは運用側（停止判断者・問い合わせ先の確定）と、**No-Go #1（全14カードが期限切れ）**。
-No-Go #1 はコードでは解決しない。中身が全部失効している以上「最短で公式情報へ到達させる」という
-約束は今日の被災者に対して果たせていない。UI をこれ以上磨いても公開判定は動かない。
+**まだできない。** ただし No-Go #2 の Web 側は、技術・運用文書の両方が揃った。
+判定は **`implementation_complete_boundary_unverified`** のまま（本番境界が未通過）。
+
+止めているのは、いま2つだけ。
+
+1. **No-Go #1**: 全14カードが期限切れ。中身が全部失効している以上、「最短で公式情報へ到達させる」
+   という約束は今日の被災者に対して果たせていない。**UI をこれ以上磨いても公開判定は動かない**
+2. **本番境界**: デプロイ承認と、問い合わせ窓口 URL の確定
