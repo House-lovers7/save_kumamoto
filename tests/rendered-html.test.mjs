@@ -40,6 +40,12 @@ test("災害行動ナビをサーバーレンダリングする", async () => {
   assert.match(html, /困りごとから選ぶ/);
   assert.match(html, /出典と時刻の詳細/);
   assert.match(html, /文字の大きさ/);
+  // 誤認を防ぐ表示は、JS が動く前の初期HTMLに出ていなければ意味がない。
+  assert.match(html, /公式ページで必ず確認する/);
+  assert.match(html, /飲料用/);
+  assert.match(html, /生活用水/);
+  assert.match(html, /順番を間違えると取り返しがつきません/);
+  assert.match(html, /公式の案内を確認できていません/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });
 

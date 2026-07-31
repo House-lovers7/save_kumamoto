@@ -642,6 +642,98 @@ footer {
   font-weight: 900;
 }
 
+/*
+  公式ページに案内が無いことの表示。手順より前に出るので、警告色の中でも
+  「危険」ではなく「欠けている」と読める黄系（--warn-*）を使い、注意（赤系）と分ける。
+*/
+.unverified-notice {
+  margin-top: 12px;
+  padding: 14px;
+  border: 2px solid var(--warn-border);
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+
+.unverified-notice p {
+  margin: 4px 0 0;
+}
+
+.action-card__meta .is-unverified {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+
+/*
+  混同すると健康被害・無駄足につながる区別。読み飛ばされると意味がないので、
+  手順と同じ紙面の重みを持たせつつ、左の縦線で「ここは確認項目」と分からせる。
+*/
+.verify-point {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--warn-border);
+  border-radius: 7px;
+}
+
+.verify-point > strong {
+  display: block;
+  font-size: 0.86em;
+  font-weight: 900;
+  color: var(--accent-ink);
+  line-height: 1.5;
+}
+
+.verify-point ul {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.verify-point li {
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--chip-bg);
+  color: var(--accent-ink);
+  font-size: 0.86em;
+  font-weight: 900;
+}
+
+.verify-point > p {
+  margin: 10px 0 0;
+  font-size: 0.84em;
+  line-height: 1.6;
+  color: var(--body-text);
+}
+
+/* 順序を誤ると取り返しがつかない手続き。番号を残して順番であることを示す。 */
+.irreversible-order {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 2px solid var(--warn-border);
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  border-radius: 7px;
+}
+
+.irreversible-order > strong {
+  display: block;
+  font-size: 0.86em;
+  font-weight: 900;
+}
+
+.irreversible-order ol {
+  margin: 10px 0 0;
+  padding-left: 1.4em;
+  display: grid;
+  gap: 8px;
+  line-height: 1.55;
+}
+
 .caution {
   display: grid;
   grid-template-columns: auto 1fr;

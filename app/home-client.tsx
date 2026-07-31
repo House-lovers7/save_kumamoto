@@ -326,7 +326,12 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
                     <div className="action-card__meta">
                       <span>{categoryLabels[card.category]}</span>
                       {card.offline && <span>オフライン保存</span>}
-                      <span>公式情報</span>
+                      {/* 確認できていないカードに「公式情報」と付けると、行けば分かると誤解させる。 */}
+                      {card.sourceStatus === "unavailable" ? (
+                        <span className="is-unverified">未確認</span>
+                      ) : (
+                        <span>公式情報</span>
+                      )}
                       {expired && <span className="is-expired" suppressHydrationWarning>期限切れ</span>}
                     </div>
                     <h3>{card.title}</h3>
@@ -341,6 +346,17 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
                     ) : (
                       <p>{card.summary}</p>
                     )}
+                    {/*
+                      リンクは生きているが、そのページにこの話題の案内が無い状態。
+                      黙って通常のカードとして出すと「行けば分かる」と誤解させるので、
+                      手順より先に、何が確認できていないのかを本文として出す。
+                    */}
+                    {card.sourceStatus === "unavailable" && (
+                      <div className="unverified-notice" role="note">
+                        <strong>公式の案内を確認できていません</strong>
+                        <p>{card.unverified}</p>
+                      </div>
+                    )}
                     <div className="steps">
                       <strong className="steps__title">まずやること</strong>
                       <ol>
@@ -349,6 +365,31 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
                         ))}
                       </ol>
                     </div>
+                    {/*
+                      混同すると健康被害・無駄足につながる区別。期限切れでも隠さない。
+                      「飲料用か生活用水か」は、期限が切れても確認すべきことに変わりがない。
+                    */}
+                    {card.verifyPoints?.map((point) => (
+                      <div className="verify-point" key={point.label}>
+                        <strong>公式ページで必ず確認する: {point.label}</strong>
+                        <ul>
+                          {point.options.map((option) => (
+                            <li key={option}>{option}</li>
+                          ))}
+                        </ul>
+                        <p>{point.why}</p>
+                      </div>
+                    ))}
+                    {card.irreversibleOrder && (
+                      <div className="irreversible-order">
+                        <strong>順番を間違えると取り返しがつきません</strong>
+                        <ol>
+                          {card.irreversibleOrder.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
                     <div className="caution">
                       <strong>注意</strong>
                       <p>{card.caution}</p>

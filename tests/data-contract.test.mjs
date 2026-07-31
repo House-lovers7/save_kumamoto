@@ -20,7 +20,10 @@ const requiredCategories = [
 test("全カードが出典・時刻・失効・公式URLを持つ", () => {
   assert.ok(actionCards.length > 0);
   for (const card of actionCards) {
-    assert.equal(card.sourceStatus, "official", card.id);
+    assert.ok(
+      ["official", "unavailable"].includes(card.sourceStatus),
+      `${card.id}: sourceStatus は official か unavailable`,
+    );
     assert.match(card.sourceUrl, /^https:\/\/(?:www\.)?(?:pref\.kumamoto\.jp|city\.kumamoto\.jp|tca\.or\.jp|qsr\.mlit\.go\.jp)\//, card.id);
     for (const key of ["publishedAt", "fetchedAt", "checkedAt", "expiresAt"]) {
       assert.equal(Number.isNaN(Date.parse(card[key])), false, `${card.id}:${key}`);
@@ -94,6 +97,83 @@ test("R1必須カテゴリをすべて備える", () => {
   const actual = new Set(actionCards.map((card) => card.category));
   for (const category of requiredCategories) {
     assert.equal(actual.has(category), true, category);
+  }
+});
+
+// リンクが生きていても、そのページにカードの手順を実行するための情報が無いことがある。
+// 2026-07-31 の巡回では、6カードが「リンクは生きているが話題の記載が無い」状態だった。
+// 黙って official のままにすると、利用者は行き先に情報があると誤解する。
+test("確認できていないカードは、何が確認できていないかを必ず書く", () => {
+  for (const card of actionCards) {
+    if (card.sourceStatus !== "unavailable") {
+      assert.equal(card.unverified, undefined, `${card.id}: official なのに unverified がある`);
+      continue;
+    }
+    assert.ok(
+      typeof card.unverified === "string" && card.unverified.trim().length >= 20,
+      `${card.id}: unavailable なら unverified に何が無いのかを書く`,
+    );
+    assert.match(
+      card.unverified,
+      /確認できませんでした|確認できていません/,
+      `${card.id}: 確認できていないことを言い切る`,
+    );
+  }
+});
+
+// 混同すると健康被害や無駄足になる区別は、出典ページに実際に書かれているものだけを載せる。
+test("確認すべき区別は選択肢と理由をそろえて持つ", () => {
+  for (const card of actionCards) {
+    if (!card.verifyPoints) continue;
+    assert.ok(card.verifyPoints.length >= 1, `${card.id}: verifyPoints が空`);
+    for (const point of card.verifyPoints) {
+      assert.ok(point.label.trim().length > 0, `${card.id}: label が空`);
+      assert.ok(
+        point.options.length >= 2,
+        `${card.id}/${point.label}: 区別なので選択肢は2件以上`,
+      );
+      assert.equal(
+        new Set(point.options).size,
+        point.options.length,
+        `${card.id}/${point.label}: 選択肢が重複している`,
+      );
+      assert.ok(
+        point.why.trim().length >= 20,
+        `${card.id}/${point.label}: なぜ区別が要るのかを書く`,
+      );
+    }
+  }
+});
+
+// このアプリが防ぎたい誤認の代表例。生活用水を飲料水と思って飲ませないための回帰ゲート。
+test("給水カードは飲める水かどうかの区別を必ず出す", () => {
+  const water = actionCards.find((card) => card.id === "water");
+  assert.ok(water, "water カードがない");
+  const points = water.verifyPoints ?? [];
+  assert.ok(
+    points.some(
+      (point) =>
+        point.options.some((option) => /飲料|飲み水/.test(option)) &&
+        point.options.some((option) => /生活用水/.test(option)),
+    ),
+    "飲料用と生活用水を並べて区別させる verifyPoints が必要",
+  );
+});
+
+// 「支払ってから知った」「片付けてから知った」は取り返しがつかない。
+test("順序を誤ると取り返しがつかない手続きは短く言い切る", () => {
+  for (const card of actionCards) {
+    if (!card.irreversibleOrder) continue;
+    assert.ok(
+      card.irreversibleOrder.length >= 2 && card.irreversibleOrder.length <= 5,
+      `${card.id}: 2〜5件`,
+    );
+    for (const item of card.irreversibleOrder) {
+      assert.ok(
+        item.trim().length >= 5 && item.length <= 60,
+        `${card.id}: ${item}`,
+      );
+    }
   }
 });
 

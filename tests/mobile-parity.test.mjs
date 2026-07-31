@@ -48,7 +48,11 @@ test("ネイティブ版も行動順序ステップと出典を全カードで�
   for (const card of mobileCards) {
     assert.ok(Array.isArray(card.steps) && card.steps.length >= 2, `${card.id}: steps`);
     assert.ok(Array.isArray(card.keywords) && card.keywords.length > 0, `${card.id}: keywords`);
-    assert.equal(card.sourceStatus, "official", card.id);
+    assert.ok(["official", "unavailable"].includes(card.sourceStatus), card.id);
+    // 確認できていないことは Web だけでなくネイティブにも同じ言葉で届く必要がある。
+    if (card.sourceStatus === "unavailable") {
+      assert.ok(card.unverified?.trim().length > 0, `${card.id}: unverified が配られていない`);
+    }
     assert.match(card.sourceUrl, /^https:\/\//, card.id);
     assert.ok(card.action.trim().length > 0, `${card.id}: action`);
     assert.ok(mobileCategoryLabels[card.category], `${card.id}: カテゴリ表示名がない`);
