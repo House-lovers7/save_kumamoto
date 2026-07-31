@@ -140,7 +140,7 @@ summary {
 .emergency-strip a {
   display: inline-flex;
   min-height: 48px;
-  min-width: 44px;
+  min-width: 48px;
   align-items: center;
   gap: 7px;
   color: #ffffff;
@@ -221,7 +221,8 @@ summary {
 }
 
 .text-size-control button {
-  min-height: 44px;
+  /* 濡れた手・手袋で押す前提。Material のタップ領域 48x48dp を実測で満たす（HIGの44ptも自動的に満たす）。 */
+  min-height: 48px;
   min-width: 48px;
   border: 1px solid transparent;
   border-radius: 999px;
@@ -481,7 +482,7 @@ footer {
 
 .category-nav button {
   flex: 0 0 auto;
-  min-height: 46px;
+  min-height: 48px;
   padding: 0 18px;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -775,7 +776,7 @@ footer {
   display: inline-flex;
   align-items: center;
   padding: 6px 2px;
-  min-height: 44px;
+  min-height: 48px;
   font-weight: 800;
   cursor: pointer;
   text-decoration: underline;
@@ -896,6 +897,10 @@ footer p {
 }
 
 footer a {
+  /* 本文中のリンクだが、押せる以上はタップ領域を満たす。inline-flex で行内に置いたまま高さを確保する。 */
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
   color: inherit;
   font-weight: 800;
 }
@@ -976,7 +981,8 @@ footer a {
   }
 
   .text-size-control button {
-    min-width: 44px;
+    /* 狭い画面でも 48dp を割らない。文字だけ縮めて幅は詰めない。 */
+    min-width: 48px;
     font-size: 0.8em;
   }
 
