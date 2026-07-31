@@ -6,6 +6,19 @@ import {
   isExpired,
 } from "../lib/disaster-data.ts";
 
+// 出典として許可するドメイン。運営主体が公的機関だと確認できたものだけを個別に列挙する。
+// ワイルドカードにしない（`*.go.jp` を許すと、内容を見ていないページを通してしまう）。
+//
+//   pref.kumamoto.jp      熊本県
+//   city.kumamoto.jp      熊本市
+//   tca.or.jp             一般社団法人 電気通信事業者協会（携帯各社の災害用伝言板の窓口）
+//   qsr.mlit.go.jp        国土交通省 九州地方整備局
+//   enecho-ss.meti.go.jp  資源エネルギー庁の災害時情報収集システム（住民拠点SS等検索）。
+//                         2026-07-31 の巡回で fuel カードの導線として追加。震度5強以上の
+//                         地震発生時に給油所の営業状況を都道府県単位で地図表示する公式システム。
+const ALLOWED_SOURCE_HOSTS =
+  /^https:\/\/(?:www\.)?(?:pref\.kumamoto\.jp|city\.kumamoto\.jp|tca\.or\.jp|qsr\.mlit\.go\.jp|enecho-ss\.meti\.go\.jp)\//;
+
 const requiredCategories = [
   "emergency",
   "water",
@@ -24,7 +37,7 @@ test("全カードが出典・時刻・失効・公式URLを持つ", () => {
       ["official", "unavailable"].includes(card.sourceStatus),
       `${card.id}: sourceStatus は official か unavailable`,
     );
-    assert.match(card.sourceUrl, /^https:\/\/(?:www\.)?(?:pref\.kumamoto\.jp|city\.kumamoto\.jp|tca\.or\.jp|qsr\.mlit\.go\.jp)\//, card.id);
+    assert.match(card.sourceUrl, ALLOWED_SOURCE_HOSTS, card.id);
     for (const key of ["publishedAt", "fetchedAt", "checkedAt", "expiresAt"]) {
       assert.equal(Number.isNaN(Date.parse(card[key])), false, `${card.id}:${key}`);
     }
