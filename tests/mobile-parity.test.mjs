@@ -98,6 +98,45 @@ test("ネイティブ版でも困りごとのかな・話し言葉から該当�
   }
 });
 
+// データを両方へ配っても、描画コードが片方にしか無ければ利用者には届かない。
+// ネイティブは以前 sourceStatus を見ずに全カードへ「公式情報」を出しており、
+// 確認できていないカードほど強く誤認させていた。表示の有無を両方で機械的に止める。
+test("誤認防止の表示を Web とネイティブの両方が持つ", () => {
+  const renderers = [
+    ["Web", readFileSync(new URL("../app/home-client.tsx", import.meta.url), "utf8")],
+    ["ネイティブ", readFileSync(new URL("../apps/mobile/src/app/index.tsx", import.meta.url), "utf8")],
+  ];
+  for (const [name, source] of renderers) {
+    // 「公式情報」は sourceStatus の分岐の中だけに置く。分岐の外に1つでもあれば、
+    // unavailable のカードが公式扱いで表示される。
+    assert.match(
+      source,
+      /sourceStatus === ["']unavailable["'][\s\S]{0,400}公式情報/,
+      `${name}: 「公式情報」タグが sourceStatus の分岐から離れている`,
+    );
+    assert.equal(
+      (source.match(/>公式情報</g) ?? []).length,
+      1,
+      `${name}: 「公式情報」タグの描画が1箇所ではない`,
+    );
+    for (const text of [
+      "未確認",
+      "公式の案内を確認できていません",
+      "公式ページで必ず確認する",
+      "順番を間違えると取り返しがつきません",
+    ]) {
+      assert.ok(source.includes(text), `${name}: 「${text}」が描画されていない`);
+    }
+    for (const field of ["unverified", "verifyPoints", "irreversibleOrder"]) {
+      assert.match(
+        source,
+        new RegExp(`\\b(card|item)\\.${field}\\b`),
+        `${name}: ${field} が配られているのに描画していない`,
+      );
+    }
+  }
+});
+
 test("ネイティブ版の期限切れ判定と接続確認時刻が Web と同じ挙動", () => {
   const card = mobileCards[0];
   const boundary = new Date(card.expiresAt);
