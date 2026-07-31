@@ -64,12 +64,17 @@ const contentTimes = {
   sourceStatus: "official" as const,
 };
 
-/** medical 専用。2026-07-31 の再確認で県トップが緊急災害用ページに差し替わっており医療導線を確認できなかったため、鮮度を更新していない（失効表示を維持する）。 */
-const staleMedicalTimes = {
-  publishedAt: "2026-07-30T09:35:00+09:00",
-  fetchedAt: "2026-07-30T09:35:00+09:00",
-  checkedAt: "2026-07-30T09:35:00+09:00",
-  expiresAt: "2026-07-30T13:35:00+09:00",
+/**
+ * medical 専用。旧出典の県トップが緊急災害用ページへ差し替わったため、2026-07-31 15:57 JST に
+ * 導線を「医療機関等を受診される避難者の皆様へ」（国保・高齢者医療課）へ再選定し、掲載を実確認した。
+ * publishedAt はページ公表の「最終更新日」が日付のみ（2026-07-29）のため 00:00 に切り下げている
+ * （鮮度を実際より新しく見せないための保守側の値）。期限は確認から24時間。
+ */
+const medicalTimes = {
+  publishedAt: "2026-07-29T00:00:00+09:00",
+  fetchedAt: "2026-07-31T15:57:00+09:00",
+  checkedAt: "2026-07-31T15:57:00+09:00",
+  expiresAt: "2026-08-01T15:57:00+09:00",
   sourceStatus: "official" as const,
 };
 
@@ -287,9 +292,9 @@ export const actionCards: ActionCard[] = [
     action: "熊本県の医療情報を確認する",
     caution:
       "このアプリは診断や受入可否を判定しません。重い症状や命の危険がある場合は119番です。",
-    sourceName: "熊本県",
-    sourceUrl: "https://www.pref.kumamoto.jp/",
-    ...staleMedicalTimes,
+    sourceName: "熊本県 国保・高齢者医療課",
+    sourceUrl: "https://www.pref.kumamoto.jp/soshiki/43/274584.html",
+    ...medicalTimes,
     areas: ["熊本県全域"],
     offline: true,
   },

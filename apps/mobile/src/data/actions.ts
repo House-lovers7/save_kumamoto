@@ -449,12 +449,12 @@ export const actionCards: ActionCard[] = [
     ],
     "action": "熊本県の医療情報を確認する",
     "caution": "このアプリは診断や受入可否を判定しません。重い症状や命の危険がある場合は119番です。",
-    "sourceName": "熊本県",
-    "sourceUrl": "https://www.pref.kumamoto.jp/",
-    "publishedAt": "2026-07-30T09:35:00+09:00",
-    "fetchedAt": "2026-07-30T09:35:00+09:00",
-    "checkedAt": "2026-07-30T09:35:00+09:00",
-    "expiresAt": "2026-07-30T13:35:00+09:00",
+    "sourceName": "熊本県 国保・高齢者医療課",
+    "sourceUrl": "https://www.pref.kumamoto.jp/soshiki/43/274584.html",
+    "publishedAt": "2026-07-29T00:00:00+09:00",
+    "fetchedAt": "2026-07-31T15:57:00+09:00",
+    "checkedAt": "2026-07-31T15:57:00+09:00",
+    "expiresAt": "2026-08-01T15:57:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
