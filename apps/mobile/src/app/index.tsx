@@ -645,7 +645,8 @@ function createStyles(c: Palette, scale: number) {
     emergencyLabel: { color: '#ffffff', fontWeight: '800' },
     emergencyLinks: { flexDirection: 'row', gap: 7 },
     emergencyButton: {
-      minHeight: 44,
+      minHeight: 48,
+      paddingVertical: 10,
       justifyContent: 'center',
       borderWidth: 1,
       borderColor: '#8fa2b8',
@@ -681,7 +682,8 @@ function createStyles(c: Palette, scale: number) {
     textScaleLabel: { color: c.muted, fontWeight: '900' },
     textScaleButton: {
       minWidth: 56,
-      minHeight: 44,
+      minHeight: 48,
+      paddingVertical: 10,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: 22,
@@ -753,7 +755,10 @@ function createStyles(c: Palette, scale: number) {
     needCountActive: { color: c.accentInk },
     chips: { paddingHorizontal: 16, paddingBottom: 20, gap: 8 },
     chip: {
-      minHeight: 44,
+      // 横スクロールの中では minHeight だけだと実描画が 44dp を割る（実測 34.7dp）。
+      // paddingVertical で中身から高さを作り、48dp を確実に満たす。
+      minHeight: 48,
+      paddingVertical: 12,
       justifyContent: 'center',
       paddingHorizontal: 16,
       borderRadius: 22,
