@@ -517,6 +517,7 @@ erDiagram
     ACTION_CARD }o--|| ACTION_CATEGORY : "category"
     ACTION_CARD }o--|| SOURCE_STATUS : "sourceStatus"
     ACTION_CARD ||--o{ VERIFY_POINT : "verifyPoints (0..n)"
+    ACTION_CARD ||--o{ FACT : "facts (0..n)"
     ACTION_CARD ||--o{ IRREVERSIBLE_STEP : "irreversibleOrder (0..5)"
     ACTION_CARD ||--o{ STEP : "steps (2..5)"
     ACTION_CARD ||--o{ KEYWORD : "keywords (1..n)"
@@ -532,6 +533,7 @@ erDiagram
         string caution "注意"
         string sourceName "出典の組織・部署名"
         string sourceUrl "公式URL（許可ドメインのみ）"
+        string sourceLandmark "リンク先で探す先の名指し。出典の実在見出し文言"
         string publishedAt "出典ページの最終更新日（保守側へ切り下げ）"
         string fetchedAt "取得時刻"
         string checkedAt "巡回で確認した時刻"
@@ -545,6 +547,13 @@ erDiagram
         string label "区別の名前（例: 水の用途）"
         string options "選択肢（2件以上・重複不可）"
         string why "なぜ区別が要るのか（20文字以上）"
+    }
+
+    FACT {
+        string label "何の答えかの見出し（4〜40文字）"
+        string items "出典から写した行（1〜15件・各4〜60文字）"
+        string citedAs "出典のどこに書かれているか（実在見出し）"
+        boolean dated "その日限りの答え。期限切れで表示しない"
     }
 
     ACTION_CATEGORY {
@@ -567,12 +576,18 @@ erDiagram
 
 | 対象 | 制約 | 検査 |
 |---|---|---|
-| `sourceUrl` | `pref.kumamoto.jp` / `city.kumamoto.jp` / `tca.or.jp` / `qsr.mlit.go.jp` のみ | `data-contract` |
+| `sourceUrl` | `pref.kumamoto.jp` / `city.kumamoto.jp` / `tca.or.jp` / `qsr.mlit.go.jp` / `enecho-ss.meti.go.jp` / `town.hikawa.kumamoto.jp` / `kumamoto-waterworks.jp` のみ | `data-contract` |
 | 時刻4種 | すべて解釈可能 / `publishedAt <= fetchedAt` / `checkedAt <= expiresAt` | `data-contract` |
 | `sourceStatus` | `official` または `unavailable` | `data-contract` |
 | `unverified` | `unavailable` なら20文字以上かつ「確認できません（でした）」を含む。`official` なら未定義 | `data-contract` |
 | `steps` | 2〜5件 / 各5〜60文字 / 断定表現（「必ず開」「在庫あり」「営業中です」等）を含まない | `data-contract` |
 | `verifyPoints` | `options` 2件以上・重複なし / `why` 20文字以上 | `data-contract` |
+| `facts` | `label` 4〜40文字・カード内で重複なし / `items` 1〜15件・各4〜60文字・重複なし・断定表現なし / `citedAs` 4文字以上 | `data-contract` |
+| `facts`（`unavailable` のカード） | `label` に「窓口／問い合わせ／問合せ／相談／連絡先」を含むものだけ（確認できていないカードが答えを持つように見せない） | `data-contract` |
+| `facts`（当日限りの2カード） | `water-station` / `food-hikawa` は `dated: true` の `facts` と `sourceLandmark` を必ず持つ | `data-contract` |
+| `facts` の失効 | `dated: true` は `expiresAt` ちょうどで表示から消え、`dated` 無しは残る（`visibleFacts()`） | `data-contract` |
+| `sourceLandmark` | 4〜60文字 / カギ括弧は含めない（描画側が付ける） | `data-contract` |
+| `facts` の描画 | Web・ネイティブとも `visibleFacts(card, now)` 経由でしか読まない（安全規則の迂回を止める） | `mobile-parity` |
 | `water` カード | 飲料と生活用水を並べる `verifyPoints` を必ず持つ | `data-contract` |
 | `irreversibleOrder` | 2〜5件 / 各5〜60文字 | `data-contract` |
 | 検索到達性 | 「こども」「くすり」「みず」等18語から意図したカードへ届く | `data-contract` |
