@@ -114,6 +114,55 @@ test("1 URLを1回だけ取得し、HTTP失敗を取得エラーとして保持�
   assert.equal(result.exitCode, 2);
 });
 
+test("上下水道局は表示面を確認してから、特殊ヘッダー付きJSON本文を照合する", async () => {
+  const cards = [
+    {
+      id: "water-station",
+      sourceUrl: "https://www.kumamoto-waterworks.jp/",
+      sourceLandmark: "第21報 応急給水所",
+      expiresAt: "2026-08-02T12:00:00+09:00",
+      facts: [{ citedAs: "第21報 応急給水所", items: ["隈庄小学校"], dated: true }],
+    },
+  ];
+  const calls = [];
+  const fetchImpl = async (url, options) => {
+    calls.push({ url, headers: options.headers });
+    if (url === "https://www.kumamoto-waterworks.jp/") {
+      return new Response("<h1>緊急情報</h1>", { status: 200 });
+    }
+    return new Response(
+      JSON.stringify({ title: "第21報 応急給水所", body: "<p>隈庄小学校</p>" }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+  };
+
+  const result = await runPatrol({
+    cards,
+    fetchImpl,
+    now: new Date("2026-08-01T12:00:00+09:00"),
+  });
+  assert.deepEqual(
+    calls.map(({ url }) => url),
+    ["https://www.kumamoto-waterworks.jp/", "https://www.kumamoto-waterworks.jp/list.php"],
+  );
+  assert.equal(calls[1].headers["X-Requested-With"], "XMLHttpRequest");
+  assert.equal(calls[1].headers.Referer, "https://www.kumamoto-waterworks.jp/");
+  assert.equal(result.exitCode, 0);
+});
+
+test("fetch自体が例外を投げても巡回全体を落とさず、取得失敗として終了する", async () => {
+  const result = await runPatrol({
+    cards: [{ id: "network", sourceUrl: "https://example.test/network" }],
+    fetchImpl: async () => {
+      throw new TypeError("network unavailable");
+    },
+  });
+
+  assert.equal(result.sources[0].status, "fetch-error");
+  assert.match(result.sources[0].error, /network unavailable/);
+  assert.equal(result.exitCode, 2);
+});
+
 test("差分レポートは対象数と要確認文字列を人が読める形で出す", () => {
   const report = renderReport({
     checkedAt: "2026-08-01T03:00:00.000Z",
