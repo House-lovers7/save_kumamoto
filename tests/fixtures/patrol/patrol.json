@@ -1,0 +1,30 @@
+{
+  "now": "2026-08-01T12:00:00+09:00",
+  "cards": [
+    {
+      "id": "fixture-a",
+      "sourceUrl": "https://fixture.example/shared",
+      "sourceLandmark": "配布のお知らせ",
+      "expiresAt": "2026-08-02T12:00:00+09:00",
+      "facts": [
+        {
+          "citedAs": "配布のお知らせ",
+          "items": ["時間 9:00〜11:00", "場所 氷川中学校"],
+          "dated": true
+        }
+      ]
+    },
+    {
+      "id": "fixture-b",
+      "sourceUrl": "https://fixture.example/shared",
+      "expiresAt": "2026-08-02T12:00:00+09:00"
+    }
+  ],
+  "responses": {
+    "https://fixture.example/shared": {
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "body": "<h2>配布のお知らせ</h2><p>時間 ９：００～１１：００</p><p>場所 氷川中学校</p>"
+    }
+  }
+}
