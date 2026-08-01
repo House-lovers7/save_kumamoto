@@ -1,0 +1,190 @@
+# このworkflowはdefault branch (main) へmergeされ、GitHubへpushされるまで一切実行されない。
+# schedule / workflow_dispatch のどちらのトリガーも、GitHub上のdefault branchに存在する
+# workflow定義が使われるため、ローカルやPRブランチ上でこのファイルを作っただけでは動かない。
+#
+# 目的: scripts/qa/patrol-diff.mjs で出典サイトとカード内容の差分・取得失敗を検知し、
+# GitHub Issueで通知するだけ。カードデータ（lib/disaster-data.ts等）の自動更新・
+# 自動commitは絶対に行わない。
+
+name: Patrol Diff
+
+on:
+  schedule:
+    # 6時間ごと（UTC 0/6/12/18時 = JST 9/15/21/3時）。
+    - cron: "0 */6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: patrol-diff
+  cancel-in-progress: false
+
+jobs:
+  patrol:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          # patrol-diff.mjs は lib/disaster-data.ts を直接 import するため、
+          # TypeScript type stripping が既定で有効な v22.18.0 以降が必要（ci.yml参照）。
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run patrol diff
+        id: patrol
+        run: |
+          set +e
+          npm run patrol:diff --silent -- --json > patrol-result.json
+          code=$?
+          set -e
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          echo "---- patrol-diff exit code: $code ----"
+          cat patrol-result.json
+
+      - name: Report findings as GitHub Issues
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require("fs");
+
+            const result = JSON.parse(fs.readFileSync("patrol-result.json", "utf8"));
+
+            const DIFF_LABEL = "patrol-diff";
+            const FETCH_ERROR_LABEL = "patrol-fetch-error";
+            const COMMON_LABEL = "automated-patrol";
+
+            async function ensureLabel(name, color, description) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name,
+                });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name,
+                  color,
+                  description,
+                });
+              }
+            }
+
+            async function findOpenIssue(label) {
+              const { data } = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: "open",
+                labels: label,
+                per_page: 5,
+              });
+              return data.find((issue) => !issue.pull_request);
+            }
+
+            async function upsertIssue({ label, title, body, extraLabels = [] }) {
+              const existing = await findOpenIssue(label);
+              if (existing) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existing.number,
+                  body: `## 再検知 (${result.checkedAt})\n\n${body}`,
+                });
+                core.info(`Commented on existing issue #${existing.number} (${label})`);
+                return;
+              }
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: [label, COMMON_LABEL, ...extraLabels],
+              });
+              core.info(`Created issue #${created.data.number} (${label})`);
+            }
+
+            await ensureLabel(COMMON_LABEL, "5319e7", "scripts/qa/patrol-diff.mjs による自動巡回");
+            await ensureLabel(DIFF_LABEL, "fbca04", "出典サイトとカード内容の差分を検知");
+            await ensureLabel(
+              FETCH_ERROR_LABEL,
+              "b60205",
+              "出典サイトの取得に失敗（高優先度）",
+            );
+            await ensureLabel("priority-high", "b60205", "優先度: 高");
+
+            const fetchErrorSources = result.sources.filter((s) => s.status === "fetch-error");
+            const diffSources = result.sources
+              .filter((s) => s.status === "ok")
+              .map((s) => ({ ...s, cards: s.cards.filter((c) => c.needsReview) }))
+              .filter((s) => s.cards.length > 0);
+
+            if (fetchErrorSources.length > 0) {
+              const lines = fetchErrorSources.map(
+                (s) =>
+                  `- \`${s.cardIds.join(", ")}\` ${s.requestUrl} — HTTP ${s.httpStatus ?? "N/A"} ${s.error ?? ""}`,
+              );
+              await upsertIssue({
+                label: FETCH_ERROR_LABEL,
+                title: `[緊急][patrol] 出典取得失敗 ${fetchErrorSources.length}件 (${result.checkedAt})`,
+                body: [
+                  "### 巡回パトロールで出典サイトの取得に失敗しました（高優先度）",
+                  "",
+                  `検知時刻: ${result.checkedAt}`,
+                  "",
+                  ...lines,
+                  "",
+                  "取得失敗中はカード内容の真偽を機械的に確認できていません。手動で出典を確認してください。",
+                  "",
+                  "_このIssueは自動生成です。データの自動更新・自動commitは行われません。_",
+                ].join("\n"),
+                extraLabels: ["priority-high"],
+              });
+            } else {
+              core.info("No fetch errors detected.");
+            }
+
+            if (diffSources.length > 0) {
+              const lines = [];
+              for (const source of diffSources) {
+                lines.push(`#### ${source.requestUrl}`);
+                for (const card of source.cards) {
+                  for (const check of card.checks) {
+                    if (check.status === "found") continue;
+                    lines.push(`- [${card.id}] ${check.kind} (${check.status}): ${check.value}`);
+                  }
+                }
+              }
+              await upsertIssue({
+                label: DIFF_LABEL,
+                title: `[patrol] 出典との差分を検知 (${result.checkedAt})`,
+                body: [
+                  "### 巡回パトロールでカード内容と出典の差分を検知しました",
+                  "",
+                  `検知時刻: ${result.checkedAt} / 対象カード数: ${result.cardCount} / 対象URL数: ${result.sourceCount}`,
+                  "",
+                  ...lines,
+                  "",
+                  "出典を確認し、必要であれば `lib/disaster-data.ts` を更新してください（このworkflowは自動更新しません）。",
+                  "",
+                  "_このIssueは自動生成です。データの自動更新・自動commitは行われません。_",
+                ].join("\n"),
+              });
+            } else {
+              core.info("No content differences detected.");
+            }
+
+            if (fetchErrorSources.length === 0 && diffSources.length === 0) {
+              core.info("Patrol clean: no fetch errors, no content differences.");
+            }

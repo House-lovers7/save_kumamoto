@@ -1,0 +1,77 @@
+name: CI
+
+# main への push と、main を対象とする pull request で実行する。
+# web (lint / build+test / audit / mobile向け生成データの乖離検知) と
+# mobile (typecheck) を並列ジョブに分けている。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: web (lint / test / audit / mobile-data drift)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          # package.json の engines は >=22.13.0 だが、lib/*.ts を直接 import する
+          # スクリプト（generate-mobile-data.mjs / patrol-diff.mjs / tests/*.test.mjs）は
+          # Node の TypeScript type stripping が既定で有効な v22.18.0 以降でないと動かない
+          # （v22.13.0〜v22.17.x は --experimental-strip-types 相当のフラグが必要）。
+          # そのため 22.13.0 に固定せず、22系の最新パッチへ浮かせて解決する。
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (tsc --noEmit)
+        run: npm run lint
+
+      - name: Test (build + node --test)
+        run: npm test
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
+      - name: Check mobile-data generation drift
+        run: |
+          npm run gen:mobile-data
+          git diff --exit-code -- apps/mobile/src/data/actions.ts
+
+  mobile:
+    name: mobile (typecheck)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - name: Install mobile dependencies
+        working-directory: apps/mobile
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: apps/mobile
+        run: npm run typecheck
