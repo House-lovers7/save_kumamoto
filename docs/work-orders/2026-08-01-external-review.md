@@ -1,7 +1,18 @@
 # 作業指示書: 外部レビュー(2026-08-01)対応
 
 作成日: 2026-08-01（ファクトチェック実施セッション）
-状態: 未着手。各WOは新セッションで実行する（発行セッションは使用量上限超過のため実装しない）
+状態: WO-1〜4 完了（2026-08-02実行セッション）。WO-5/6は人間待ち
+
+## 実施記録（2026-08-02）
+
+| WO | commit | 検証 |
+|---|---|---|
+| WO-1 | f7e3371 | 新テスト4件（修正前red 3件実証→green）、npm test 43/43 |
+| WO-2 | 0efbb71 | lint PASS + grep確認 |
+| WO-3 | 965ae18 | 47/47 PASS + ローカル実測（/ と /status のヘッダー確認、/statusのみno-store）。本番実測はデプロイ後 |
+| WO-4 | d4f500b + e11b985 + d5291dd | actionlint PASS。CI初回失敗2回: ①npm ci lock不整合（linux限定、rolldown wasm系optional依存の@emnapi/*欠落）→ node:24 linuxコンテナでlock再生成 ②Node 22→24へ整合。3回目で全ジョブPASS。patrolはworkflow_dispatch実走でIssue #1自動作成を確認（既知差分: support-systems） |
+
+WO-4補足: 有効期限の事前警告Issueは patrol-diff.mjs の--json出力に期限残り時間情報がないため未実装（期限切れ後はneedsReview経由で差分Issueに含まれる）。
 
 ## 経緯
 
