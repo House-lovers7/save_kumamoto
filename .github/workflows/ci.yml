@@ -29,12 +29,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          # package.json の engines は >=22.13.0 だが、lib/*.ts を直接 import する
-          # スクリプト（generate-mobile-data.mjs / patrol-diff.mjs / tests/*.test.mjs）は
-          # Node の TypeScript type stripping が既定で有効な v22.18.0 以降でないと動かない
-          # （v22.13.0〜v22.17.x は --experimental-strip-types 相当のフラグが必要）。
-          # そのため 22.13.0 に固定せず、22系の最新パッチへ浮かせて解決する。
-          node-version: "22"
+          # package.json の engines は >=22.13.0。開発機は Node 24 (npm 11) で、
+          # package-lock.json も npm 11 が生成している。Node 22 の npm 10 は
+          # このlockを「@emnapi/* が欠落」として npm ci を拒否するため（実測: 初回CI失敗）、
+          # lockを生成する開発機と同じ Node 24 (npm 11) 系に揃える。
+          # lib/*.ts を直接 import するスクリプト群に必要な TypeScript type stripping も
+          # Node 24 では既定で有効。
+          node-version: "24"
           cache: npm
 
       - name: Install dependencies

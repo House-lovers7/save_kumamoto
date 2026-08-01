@@ -32,9 +32,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          # patrol-diff.mjs は lib/disaster-data.ts を直接 import するため、
-          # TypeScript type stripping が既定で有効な v22.18.0 以降が必要（ci.yml参照）。
-          node-version: "22"
+          # 開発機と同じ Node 24 (npm 11) 系に揃える（npm 10 では npm ci が
+          # lock不整合で失敗する。詳細は ci.yml の同ステップのコメント参照）。
+          # patrol-diff.mjs が lib/disaster-data.ts を直接 import するための
+          # TypeScript type stripping も Node 24 では既定で有効。
+          node-version: "24"
           cache: npm
 
       - name: Install dependencies
