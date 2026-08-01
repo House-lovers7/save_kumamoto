@@ -1,8 +1,30 @@
-# Fresh-thread handoff（2026-08-01 13:40 更新／カード19件・No-Go #1 は熊本市の3件が未解消）
+# Fresh-thread handoff（2026-08-01 13:52 更新／カード19件・No-Go #1 は熊本市の3件が未解消）
 
 **再開方法**: 新セッションで `/resume-handoff /Users/tg/projects/app_development/save_kumamoto/HANDOFF.md`。
 着手前に必ず `git log --pretty='%h %ad %s' --date=iso -5` で HEAD が `a67facb` 以降かを確認し、
 先行完走している作業を二重実行しないこと。
+
+## 直近のセッション（13:35〜13:52）で完了したこと
+
+**巡回差分スクリプトを実装し、実URLで検証まで完了した。再実装しないこと。**
+
+| commit | 内容 |
+|---|---|
+| `29c5c76` | RED: HTML/JSON正規化、重複排除、期限切れ、HTTP失敗、レポートのテスト契約 |
+| `1d8712c` | `scripts/qa/patrol-diff.mjs` の実装。終了コード0/1/2、fixture、JSON出力 |
+| `872e157` | `npm run patrol:diff` と運用手順を追加。support-systemsの3行を公式本文の表現へ揃える |
+| `644decf` | 上下水道局の2段取得とfetch例外の回帰テスト |
+
+- **実境界**: 2026-08-01 13:48 JST、19カード・17 `sourceUrl` を取得。17 URLすべて取得成功、
+  `facts.items` / `facts.citedAs` / `sourceLandmark` は要確認0件
+- **`npm test` 39件 PASS**／Web typecheck・lint PASS／mobile typecheck・lint PASS
+- `support-systems` の3行は情報内容を変えず、公式本文に実在する語順へ揃えた。
+  Web正典からmobileデータも再生成済み
+- **これは11:25巡回の更新ではない。`PATROL_AT` は11:25のまま**。
+  `[到達]` のカードは文字列照合対象が無く、stepsの意味確認・`publishedAt`確認も未実施。
+  再確認なしで鮮度時刻を進めないこと
+- 通常実行: `npm run patrol:diff`。終了コード0=取得・引用一致、1=要確認、2=取得失敗。
+  0でも人間による手順単位の確認は必要（`docs/OPERATIONS.md` 第5章）
 
 ## 直近のセッション（12:35〜13:40）で完了したこと
 
@@ -50,8 +72,8 @@
 | ネイティブ実描画の確認 | エミュレータ起動＋ビルドで毎回20〜30分。今日は失敗 | **リリース前だけに限定**し、日常の変更は Web の実測だけで回す |
 | カード枚数の増加 | 19枚。巡回コストは枚数に比例 | 枚数を増やす判断のたびに巡回コストを見積もる |
 
-**次セッションで最初に作るべきは巡回スクリプト**（`scripts/qa/patrol-diff.mjs` 相当）。
-これが無い限り、以降のセッションも同じ時間がかかる。
+**巡回スクリプトは13:52に実装・実URL検証まで完了した**（`scripts/qa/patrol-diff.mjs`）。
+以降は `npm run patrol:diff` で差分を絞り、差分カードと `[到達]` カードだけを人が判断する。
 
 ## 次セッション冒頭でやること（時刻が近い順）
 
