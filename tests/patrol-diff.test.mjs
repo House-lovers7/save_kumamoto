@@ -63,6 +63,33 @@ test("landmark・citedAs・各itemの消失と、dated情報の期限切れを�
   assert.equal(result.needsReview, true);
 });
 
+test("表の区名・施設・時間・住所が別要素でも、全構成要素があればfact一致とする", () => {
+  const card = {
+    id: "bath",
+    sourceUrl: "https://example.test/bath",
+    expiresAt: "2026-08-02T12:00:00+09:00",
+    facts: [
+      {
+        citedAs: "3 実施施設",
+        items: [
+          "中央区 龍の湯 15:00〜22:00（中央区琴平本町5-54）",
+          "北区 消えた湯 9:00〜21:00（北区架空町1）",
+        ],
+      },
+    ],
+  };
+  const source = `
+    <h2>3 実施施設</h2>
+    <h3>中央区</h3><p>龍の湯（15：00～22：00）</p><p>受付で住所を確認します</p><p>中央区琴平本町5-54</p>
+    <h3>北区</h3><p>9：00～21：00</p>
+  `;
+
+  const result = checkCardContent(card, source, new Date("2026-08-01T12:00:00+09:00"));
+  assert.equal(result.checks[1].status, "found");
+  assert.equal(result.checks[1].match, "components");
+  assert.equal(result.checks[2].status, "missing");
+});
+
 test("1 URLを1回だけ取得し、HTTP失敗を取得エラーとして保持する", async () => {
   const cards = [
     { id: "a", sourceUrl: "https://example.test/shared", sourceLandmark: "見出し" },
