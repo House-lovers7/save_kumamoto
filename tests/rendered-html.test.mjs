@@ -31,7 +31,7 @@ test("災害行動ナビをサーバーレンダリングする", async () => {
   const html = await response.text();
   assert.match(html, /<html lang="ja">/i);
   assert.match(html, /<title>くまもと いまどうするナビ<\/title>/i);
-  assert.match(html, /いま、一番/);
+  assert.match(html, /いま困っていることは/);
   assert.match(html, /119/);
   assert.match(html, /あなたの居場所を集めません/);
   assert.match(html, /有効期限/);

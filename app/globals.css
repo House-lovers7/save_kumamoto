@@ -264,43 +264,14 @@ summary {
   margin: 4px 0 0;
 }
 
-.hero {
-  position: relative;
-  overflow: hidden;
-  width: min(1180px, calc(100% - 40px));
-  min-height: 320px;
-  margin: 6px auto 24px;
-  padding: clamp(38px, 7vw, 76px);
-  display: grid;
-  grid-template-columns: 1.25fr 0.75fr;
-  gap: 50px;
-  align-items: end;
-  background: var(--navy);
-  color: #ffffff;
-  border-radius: 10px 10px 50px 10px;
-}
-
-.hero::after {
-  content: "熊";
-  position: absolute;
-  right: -0.05em;
-  top: -0.4em;
-  font-family: "Yu Mincho", serif;
-  font-size: clamp(230px, 32vw, 430px);
-  line-height: 1;
-  color: rgb(255 255 255 / 3.5%);
-  pointer-events: none;
-}
-
 .eyebrow {
-  margin: 0 0 10px;
+  margin: 0 0 6px;
   font-size: 0.76em;
   font-weight: 900;
   letter-spacing: 0.16em;
-  text-transform: uppercase;
+  color: var(--muted);
 }
 
-.hero h2,
 .safety-note h2 {
   margin: 0;
   font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
@@ -310,62 +281,85 @@ summary {
   letter-spacing: -0.04em;
 }
 
-.freshness-panel {
-  position: relative;
-  z-index: 1;
-  padding: 22px;
-  background: rgb(255 255 255 / 9%);
-  border: 1px solid rgb(255 255 255 / 24%);
-  border-radius: 8px;
-  backdrop-filter: blur(6px);
-}
-
-.freshness-panel > div {
+/*
+  鮮度は1行。被災者が最初に見るのは選択肢であって、アプリの見出しではない。
+  期限切れが出たときだけ .freshness-bar__alert が増える。
+*/
+.freshness-bar {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  width: min(1040px, calc(100% - 40px));
+  margin: 0 auto 20px;
+  padding: 10px 14px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
 }
 
-.freshness-panel__signal {
-  display: inline-block;
+.freshness-bar__signal {
+  flex: none;
   width: 10px;
   height: 10px;
-  margin-right: 8px;
   border-radius: 50%;
-  background: #5ce2aa;
-  box-shadow: 0 0 0 7px rgb(92 226 170 / 12%);
+  background: #23a97b;
 }
 
-.freshness-panel--mixed .freshness-panel__signal {
-  background: #f3c14b;
-  box-shadow: 0 0 0 7px rgb(243 193 75 / 14%);
+.freshness-bar--mixed .freshness-bar__signal {
+  background: #c08a0d;
 }
 
-.freshness-panel--stale .freshness-panel__signal {
-  background: #f0836f;
-  box-shadow: 0 0 0 7px rgb(240 131 111 / 16%);
+.freshness-bar--stale .freshness-bar__signal {
+  background: #bd382c;
 }
 
-.freshness-panel--stale {
-  background: rgb(240 131 111 / 14%);
-  border-color: rgb(240 131 111 / 42%);
+.freshness-bar--stale {
+  background: var(--warn-bg);
+  border-color: var(--warn-border);
+  color: var(--warn-ink);
 }
 
-.freshness-panel strong {
-  display: inline;
+.freshness-bar--mixed {
+  border-color: var(--warn-border);
 }
 
-.freshness-panel time {
-  margin-top: 4px;
+.freshness-bar time {
   font-family: ui-monospace, monospace;
   font-size: 0.84em;
-  opacity: 0.8;
+  color: var(--muted);
 }
 
-.freshness-panel p {
-  margin: 16px 0 0;
-  font-size: 0.78em;
-  line-height: 1.7;
-  opacity: 0.86;
+.freshness-bar--stale time {
+  color: var(--warn-ink);
+}
+
+.freshness-bar__alert {
+  flex-basis: 100%;
+}
+
+.freshness-bar__alert strong {
+  font-size: 0.9em;
+}
+
+.freshness-bar__alert p {
+  margin: 4px 0 0;
+  font-size: 0.82em;
+  line-height: 1.6;
+}
+
+.need-lead {
+  width: min(1040px, calc(100% - 40px));
+  margin: 0 auto 12px;
+}
+
+.need-lead h2 {
+  margin: 0;
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: clamp(1.6em, 5vw, 2.4em);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
 }
 
 .need-grid,
@@ -385,11 +379,11 @@ footer {
 
 .need-grid button {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 10px;
+  gap: 4px 10px;
   min-height: 64px;
-  padding: 10px 14px;
+  padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 9px;
   background: var(--white);
@@ -404,19 +398,6 @@ footer {
   border-color: var(--navy);
   outline: 3px solid var(--navy);
   outline-offset: -2px;
-}
-
-.need-grid__icon {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--mist);
-  color: var(--accent-ink);
-  font-family: "Yu Mincho", serif;
-  font-size: 1.05em;
-  font-weight: 900;
 }
 
 .need-grid__label {
@@ -766,6 +747,45 @@ footer {
   color: var(--danger-ink);
 }
 
+/*
+  手順から下を畳む開閉。閉じているのが既定なので、開く操作子であることが
+  一目で分かる大きさと当たり判定を持たせる（48dp）。
+*/
+.card-detail > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  margin: 14px 0 0;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--chip-bg);
+  color: var(--accent-ink);
+  font-size: 0.86em;
+  font-weight: 900;
+  cursor: pointer;
+  list-style: none;
+}
+
+.card-detail > summary::-webkit-details-marker {
+  display: none;
+}
+
+.card-detail > summary::after {
+  content: "▼";
+  font-size: 0.8em;
+}
+
+.card-detail[open] > summary::after {
+  content: "▲";
+}
+
+.card-detail[open] > summary {
+  margin-bottom: 4px;
+}
+
 .source-details {
   margin-bottom: 16px;
   font-size: 0.74em;
@@ -984,32 +1004,6 @@ footer a {
     /* 狭い画面でも 48dp を割らない。文字だけ縮めて幅は詰めない。 */
     min-width: 48px;
     font-size: 0.8em;
-  }
-
-  /* 被災直後に開く画面。ヒーローを詰めて、困りごとボタンを1画面目に載せる。 */
-  .hero {
-    grid-template-columns: 1fr;
-    min-height: auto;
-    gap: 18px;
-    margin-bottom: 16px;
-    padding: 22px 22px 24px;
-    border-radius: 8px 8px 26px 8px;
-  }
-
-  .hero h2 {
-    font-size: clamp(2em, 10.5vw, 3em);
-  }
-
-  .hero::after {
-    font-size: clamp(150px, 42vw, 220px);
-  }
-
-  .freshness-panel {
-    padding: 14px 16px;
-  }
-
-  .freshness-panel p {
-    margin-top: 10px;
   }
 
   .site-header {

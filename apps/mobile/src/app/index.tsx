@@ -43,17 +43,6 @@ const needCategories = categories.filter(
   (item): item is Exclude<ActionCategory, 'all'> => item !== 'all',
 );
 
-const categoryIcons: Record<Exclude<ActionCategory, 'all'>, string> = {
-  emergency: '報',
-  water: '水',
-  essentials: '食',
-  shelter: '避',
-  medical: '薬',
-  communication: '電',
-  transport: '道',
-  recovery: '片',
-};
-
 export default function HomeScreen() {
   const scheme = useColorScheme();
   const palette = paletteFor(scheme);
@@ -65,6 +54,8 @@ export default function HomeScreen() {
   const [category, setCategory] = useState<ActionCategory>('all');
   const [query, setQuery] = useState('');
   const [expandedSources, setExpandedSources] = useState<Record<string, boolean>>({});
+  // 手順から下は既定で畳む。必要な1枚に届くまでのスクロールを短くするため。
+  const [expandedDetails, setExpandedDetails] = useState<Record<string, boolean>>({});
   // 保存情報の期限切れは時間で変わる。起動時刻で固定せず、開いたままでも切り替わるようにする。
   const [now, setNow] = useState(() => new Date());
 
@@ -151,6 +142,10 @@ export default function HomeScreen() {
     setExpandedSources((current) => ({ ...current, [id]: !current[id] }));
   }
 
+  function toggleDetail(id: string) {
+    setExpandedDetails((current) => ({ ...current, [id]: !current[id] }));
+  }
+
   function openOfficial(url: string, name: string) {
     Alert.alert(
       '公式サイトを開きます',
@@ -234,32 +229,39 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        <View style={styles.hero}>
-          <Text style={[styles.heroKicker, { fontSize: 12 * scale }]}>令和8年熊本地震・生活支援</Text>
-          <Text style={[styles.heroTitle, { fontSize: 34 * scale, lineHeight: 44 * scale }]}>
-            いま、一番{'\n'}困っていることは？
-          </Text>
-          <View
-            accessibilityRole="summary"
-            style={[styles.freshness, freshness.tone === 'stale' && styles.freshnessStale]}>
-            <View style={styles.freshnessHead}>
-              <View
-                style={[styles.freshnessDot, { backgroundColor: freshnessColors[freshness.tone] }]}
-              />
-              <View style={styles.freshnessText}>
-                <Text style={[styles.freshnessTitle, { fontSize: 13 * scale }]}>
-                  {freshness.headline}
-                </Text>
-                <Text style={[styles.freshnessTime, { fontSize: 12 * scale }]}>
-                  接続確認 {formatRelativeTime(siteCheckedAt, now)}（{formatTimestamp(siteCheckedAt)}）
-                </Text>
-              </View>
-            </View>
-            <Text style={[styles.heroNote, { fontSize: 12 * scale }]}>{freshness.note}</Text>
+        {/*
+          鮮度は普段1行だけ出す。期限切れが出たときにだけ見出しと説明を足す。
+          常に警告文を置くと、本当に古くなったときの警告がその中に埋もれる。
+        */}
+        <View
+          accessibilityRole="summary"
+          style={[styles.freshness, freshness.tone !== 'fresh' && styles.freshnessStale]}>
+          <View style={styles.freshnessHead}>
+            <View
+              style={[styles.freshnessDot, { backgroundColor: freshnessColors[freshness.tone] }]}
+            />
+            <Text style={[styles.freshnessTime, { fontSize: 12 * scale }]}>
+              接続確認 {formatRelativeTime(siteCheckedAt, now)}（{formatTimestamp(siteCheckedAt)}）
+            </Text>
           </View>
+          {freshness.tone !== 'fresh' && (
+            <View style={styles.freshnessAlert}>
+              <Text style={[styles.freshnessTitle, { fontSize: 13 * scale }]}>
+                {freshness.headline}
+              </Text>
+              <Text style={[styles.freshnessNote, { fontSize: 12 * scale }]}>{freshness.note}</Text>
+            </View>
+          )}
         </View>
 
-        <Text style={[styles.sectionLabel, { fontSize: 12 * scale }]}>困りごとから選ぶ</Text>
+        <View style={styles.needLead}>
+          <Text style={[styles.needLeadKicker, { fontSize: 12 * scale }]}>
+            令和8年熊本地震・生活支援
+          </Text>
+          <Text style={[styles.needLeadTitle, { fontSize: 24 * scale, lineHeight: 32 * scale }]}>
+            いま困っていることは？
+          </Text>
+        </View>
         <View style={styles.needGrid}>
           {needCategories.map((item) => (
             <Pressable
@@ -269,10 +271,7 @@ export default function HomeScreen() {
               accessibilityLabel={`${categoryLabels[item]} ${countsByCategory.get(item) ?? 0}件`}
               onPress={() => setCategory(item)}
               style={[styles.needCell, category === item && styles.needCellActive]}>
-              {/* accessibilityLabel が「◯◯ N件」を読むので、中の3つは読み上げから外す。 */}
-              <Text importantForAccessibility="no-hide-descendants" style={styles.needIcon}>
-                {categoryIcons[item]}
-              </Text>
+              {/* accessibilityLabel が「◯◯ N件」を読むので、中の2つは読み上げから外す。 */}
               <Text
                 importantForAccessibility="no-hide-descendants"
                 style={[
@@ -366,6 +365,7 @@ export default function HomeScreen() {
             {filtered.map((item) => {
               const expired = isExpired(item, now);
               const sourceOpen = expandedSources[item.id] === true;
+              const detailOpen = expandedDetails[item.id] === true;
               return (
                 <View key={item.id} style={styles.card}>
                   <View style={styles.cardTop}>
@@ -429,6 +429,46 @@ export default function HomeScreen() {
                     </View>
                   )}
 
+                  <View style={styles.sourceSummary}>
+                    <Text
+                      style={[
+                        styles.sourceSummaryText,
+                        expired && styles.sourceSummaryExpired,
+                        { fontSize: 12 * scale },
+                      ]}>
+                      {expired
+                        ? `有効期限切れ（${formatTimestamp(item.expiresAt)}）`
+                        : `有効期限 ${formatTimestamp(item.expiresAt)}まで`}
+                    </Text>
+                    <Text style={[styles.sourceSummaryText, { fontSize: 12 * scale }]}>
+                      接続確認 {formatRelativeTime(item.checkedAt, now)}
+                    </Text>
+                  </View>
+
+                  {/*
+                    手順から下は畳む。畳んだ状態でも、要約・有効期限・「未確認」の警告・
+                    公式サイトへのボタンは残す。閉じたまま行動できる材料は隠さない。
+                  */}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: detailOpen }}
+                    accessibilityLabel={`${item.title}の手順と注意`}
+                    onPress={() => toggleDetail(item.id)}
+                    style={styles.detailToggle}>
+                    <Text
+                      importantForAccessibility="no-hide-descendants"
+                      style={[styles.detailToggleText, { fontSize: 14 * scale }]}>
+                      手順と注意を見る
+                    </Text>
+                    <Text
+                      importantForAccessibility="no-hide-descendants"
+                      style={styles.detailToggleMark}>
+                      {detailOpen ? '▲' : '▼'}
+                    </Text>
+                  </Pressable>
+
+                  {detailOpen && (
+                  <>
                   {/* 期限切れでも消さない。時刻に依存しない手順は、通信がなくても使える。 */}
                   <View style={styles.steps}>
                     <Text style={[styles.stepsTitle, { fontSize: 12 * scale }]}>まずやること</Text>
@@ -488,22 +528,6 @@ export default function HomeScreen() {
                     <Text style={[styles.cautionText, { fontSize: 13 * scale }]}>{item.caution}</Text>
                   </View>
 
-                  <View style={styles.sourceSummary}>
-                    <Text
-                      style={[
-                        styles.sourceSummaryText,
-                        expired && styles.sourceSummaryExpired,
-                        { fontSize: 12 * scale },
-                      ]}>
-                      {expired
-                        ? `有効期限切れ（${formatTimestamp(item.expiresAt)}）`
-                        : `有効期限 ${formatTimestamp(item.expiresAt)}まで`}
-                    </Text>
-                    <Text style={[styles.sourceSummaryText, { fontSize: 12 * scale }]}>
-                      接続確認 {formatRelativeTime(item.checkedAt, now)}
-                    </Text>
-                  </View>
-
                   <Pressable
                     accessibilityRole="button"
                     accessibilityState={{ expanded: sourceOpen }}
@@ -524,6 +548,8 @@ export default function HomeScreen() {
                       {'\n'}接続確認：{formatTimestamp(item.checkedAt)}
                       {'\n'}有効期限：{formatTimestamp(item.expiresAt)}
                     </Text>
+                  )}
+                  </>
                   )}
 
                   <Pressable
@@ -667,36 +693,30 @@ function createStyles(c: Palette, scale: number) {
     textScaleButtonActive: { backgroundColor: c.navy, borderColor: c.navy },
     textScaleButtonText: { color: c.ink, fontWeight: '900' },
     textScaleButtonTextActive: { color: '#ffffff' },
-    hero: {
-      marginHorizontal: 16,
-      marginBottom: 26,
-      padding: 24,
-      backgroundColor: c.navy,
-      borderTopLeftRadius: 8,
-      borderTopRightRadius: 8,
-      borderBottomLeftRadius: 8,
-      borderBottomRightRadius: 34,
-    },
-    heroKicker: { color: c.onNavyMuted, fontWeight: '800', letterSpacing: 1 },
-    heroTitle: { color: c.onNavy, fontFamily: 'serif', fontWeight: '800', marginTop: 9 },
+    // 鮮度は1行のバー。期限切れが出たときだけ警告色へ変わり、説明が下に増える。
     freshness: {
-      marginTop: 22,
-      padding: 16,
+      marginHorizontal: 16,
+      marginBottom: 20,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
       borderRadius: 8,
       borderWidth: 1,
-      borderColor: 'rgba(255, 255, 255, 0.24)',
-      backgroundColor: 'rgba(255, 255, 255, 0.09)',
+      borderColor: c.line,
+      backgroundColor: c.surface,
     },
     freshnessStale: {
-      borderColor: 'rgba(240, 131, 111, 0.55)',
-      backgroundColor: 'rgba(240, 131, 111, 0.16)',
+      borderColor: c.warnBorder,
+      backgroundColor: c.warnBg,
     },
-    freshnessHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    freshnessDot: { width: 12, height: 12, borderRadius: 6 },
-    freshnessText: { flex: 1 },
-    freshnessTitle: { color: c.onNavy, fontWeight: '800' },
-    freshnessTime: { color: c.onNavyMuted, fontFamily: 'monospace', marginTop: 3 },
-    heroNote: { color: c.onNavyMuted, marginTop: 12, lineHeight: 19 * scale },
+    freshnessHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    freshnessDot: { width: 10, height: 10, borderRadius: 5 },
+    freshnessTime: { color: c.muted, fontFamily: 'monospace', flexShrink: 1 },
+    freshnessAlert: { marginTop: 8 },
+    freshnessTitle: { color: c.warnInk, fontWeight: '800' },
+    freshnessNote: { color: c.warnInk, marginTop: 4, lineHeight: 19 * scale },
+    needLead: { marginHorizontal: 18, marginBottom: 12 },
+    needLeadKicker: { color: c.muted, fontWeight: '800', letterSpacing: 1 },
+    needLeadTitle: { color: c.ink, fontFamily: 'serif', fontWeight: '800', marginTop: 4 },
     sectionLabel: {
       color: c.muted,
       fontWeight: '900',
@@ -714,11 +734,12 @@ function createStyles(c: Palette, scale: number) {
     needCell: {
       flexGrow: 1,
       flexBasis: '30%',
-      minHeight: 96,
+      // 漢字1文字を外した分だけ詰める。48dp は大きく上回るのでタップ領域は保てる。
+      minHeight: 72,
       alignItems: 'center',
       justifyContent: 'center',
       gap: 4,
-      paddingVertical: 12,
+      paddingVertical: 10,
       paddingHorizontal: 6,
       borderRadius: 8,
       borderWidth: 1,
@@ -726,7 +747,6 @@ function createStyles(c: Palette, scale: number) {
       backgroundColor: c.surface,
     },
     needCellActive: { borderColor: c.navy, backgroundColor: c.chipBg },
-    needIcon: { color: c.accentInk, fontFamily: 'serif', fontSize: 22, fontWeight: '900' },
     needLabel: { color: c.ink, fontWeight: '800', textAlign: 'center' },
     needLabelActive: { color: c.accentInk },
     needCount: { color: c.muted, fontFamily: 'monospace' },
@@ -897,6 +917,22 @@ function createStyles(c: Palette, scale: number) {
     },
     sourceSummaryText: { color: c.muted, fontFamily: 'monospace' },
     sourceSummaryExpired: { color: c.dangerInk, fontWeight: '900' },
+    // 既定で閉じている開閉。開く操作子だと分かる大きさと当たり判定（48dp）を持たせる。
+    detailToggle: {
+      minHeight: 48,
+      marginTop: 14,
+      paddingHorizontal: 14,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: c.line,
+      backgroundColor: c.chipBg,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+    },
+    detailToggleText: { color: c.accentInk, fontWeight: '900', flexShrink: 1 },
+    detailToggleMark: { color: c.accentInk, fontSize: 12, fontWeight: '900' },
     sourceToggle: { minHeight: 44, justifyContent: 'center', marginTop: 4 },
     sourceToggleText: { color: c.accentInk, fontWeight: '800', textDecorationLine: 'underline' },
     source: { color: c.muted, fontFamily: 'monospace', lineHeight: 17 * scale, marginBottom: 14 },

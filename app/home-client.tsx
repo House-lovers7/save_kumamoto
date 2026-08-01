@@ -25,17 +25,6 @@ const textScaleLabels: Record<TextScale, string> = {
   xlarge: "特大",
 };
 
-const categoryIcons: Record<Exclude<ActionCategory, "all">, string> = {
-  emergency: "報",
-  water: "水",
-  essentials: "食",
-  shelter: "避",
-  medical: "薬",
-  communication: "電",
-  transport: "道",
-  recovery: "片",
-};
-
 export type HomeClientProps = {
   /**
    * 緊急停止スイッチ。サーバー側で `readEmergencyMode()` が読んだ値を受け取る。
@@ -232,26 +221,33 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
         </div>
       )}
 
-      <section className="hero" aria-labelledby="hero-title">
-        <div>
-          <p className="eyebrow">令和8年熊本地震・生活支援</p>
-          <h2 id="hero-title">いま、一番<br />困っていることは？</h2>
-        </div>
-        <div
-          className={`freshness-panel freshness-panel--${freshness.tone}`}
-          role="status"
-          suppressHydrationWarning
-        >
-          <span className="freshness-panel__signal" aria-hidden="true" />
-          <div>
+      {/*
+        鮮度は普段1行だけ出す。期限切れが出たときにだけ見出しと説明を足す。
+        常に警告文を置くと、本当に古くなったときの警告がその中に埋もれる。
+      */}
+      <div
+        className={`freshness-bar freshness-bar--${freshness.tone}`}
+        role="status"
+        suppressHydrationWarning
+      >
+        <span className="freshness-bar__signal" aria-hidden="true" />
+        <time dateTime={siteCheckedAt} suppressHydrationWarning>
+          接続確認 {formatRelativeTime(siteCheckedAt, now)}（{formatTimestamp(siteCheckedAt)}）
+        </time>
+        {freshness.tone !== "fresh" && (
+          <div className="freshness-bar__alert">
             <strong>{freshness.headline}</strong>
-            <time dateTime={siteCheckedAt} suppressHydrationWarning>
-              接続確認 {formatRelativeTime(siteCheckedAt, now)}（{formatTimestamp(siteCheckedAt)}）
-            </time>
+            <p>{freshness.note}</p>
           </div>
-          <p>{freshness.note}</p>
+        )}
+      </div>
+
+      {!emergencyMode && (
+        <div className="need-lead">
+          <p className="eyebrow">令和8年熊本地震・生活支援</p>
+          <h2 id="hero-title">いま困っていることは？</h2>
         </div>
-      </section>
+      )}
 
       {/*
         縮退中は絞り込みの操作子を出さない。行き先の #actions ごと消えているため、
@@ -266,9 +262,6 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
             aria-pressed={category === item}
             onClick={() => selectNeed(item)}
           >
-            <span className="need-grid__icon" aria-hidden="true">
-              {categoryIcons[item]}
-            </span>
             <span className="need-grid__label">{categoryLabels[item]}</span>
             <span className="need-grid__count">{countsByCategory.get(item) ?? 0}件</span>
           </button>
@@ -357,14 +350,30 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
                         <p>{card.unverified}</p>
                       </div>
                     )}
-                    <div className="steps">
-                      <strong className="steps__title">まずやること</strong>
-                      <ol>
-                        {card.steps.map((step) => (
-                          <li key={step}>{step}</li>
-                        ))}
-                      </ol>
+                    <div className="source-summary" suppressHydrationWarning>
+                      <span className={expired ? "source-summary__status is-expired" : "source-summary__status"}>
+                        {expired
+                          ? `有効期限切れ（${formatTimestamp(card.expiresAt)}）`
+                          : `有効期限 ${formatTimestamp(card.expiresAt)}まで`}
+                      </span>
+                      <span>接続確認 {formatRelativeTime(card.checkedAt, now)}</span>
                     </div>
+                    {/*
+                      手順から下は畳む。18枚のカードを全部開いたまま並べると、必要な1枚に
+                      たどり着くまでのスクロールが長すぎる。JS が動く前でも開けるよう <details>
+                      を使い、初期HTMLからは消さない（誤認防止の表示は初期HTMLに出ている必要がある）。
+                      畳んだ状態でも残すのは、要約・有効期限・「未確認」の警告・公式サイトへのボタン。
+                    */}
+                    <details className="card-detail">
+                      <summary>手順と注意を見る</summary>
+                      <div className="steps">
+                        <strong className="steps__title">まずやること</strong>
+                        <ol>
+                          {card.steps.map((step) => (
+                            <li key={step}>{step}</li>
+                          ))}
+                        </ol>
+                      </div>
                     {/*
                       混同すると健康被害・無駄足につながる区別。期限切れでも隠さない。
                       「飲料用か生活用水か」は、期限が切れても確認すべきことに変わりがない。
@@ -390,21 +399,13 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
                         </ol>
                       </div>
                     )}
-                    <div className="caution">
-                      <strong>注意</strong>
-                      <p>{card.caution}</p>
-                    </div>
-                    <div className="source-summary" suppressHydrationWarning>
-                      <span className={expired ? "source-summary__status is-expired" : "source-summary__status"}>
-                        {expired
-                          ? `有効期限切れ（${formatTimestamp(card.expiresAt)}）`
-                          : `有効期限 ${formatTimestamp(card.expiresAt)}まで`}
-                      </span>
-                      <span>接続確認 {formatRelativeTime(card.checkedAt, now)}</span>
-                    </div>
-                    <details className="source-details">
-                      <summary>出典と時刻の詳細</summary>
-                      <dl>
+                      <div className="caution">
+                        <strong>注意</strong>
+                        <p>{card.caution}</p>
+                      </div>
+                      <details className="source-details">
+                        <summary>出典と時刻の詳細</summary>
+                        <dl>
                         <div>
                           <dt>出典</dt>
                           <dd>{card.sourceName}</dd>
@@ -421,11 +422,12 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
                           <dt>接続確認</dt>
                           <dd>{formatTimestamp(card.checkedAt)}</dd>
                         </div>
-                        <div>
-                          <dt>有効期限</dt>
-                          <dd>{formatTimestamp(card.expiresAt)}</dd>
-                        </div>
-                      </dl>
+                          <div>
+                            <dt>有効期限</dt>
+                            <dd>{formatTimestamp(card.expiresAt)}</dd>
+                          </div>
+                        </dl>
+                      </details>
                     </details>
                     {offline ? (
                       <div className="primary-link primary-link--disabled" aria-disabled="true">
