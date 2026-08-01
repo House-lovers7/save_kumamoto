@@ -15,7 +15,9 @@
 // 期待値:
 //   EMERGENCY_MODE=true  → actionCard 0 / needGrid 0 / controls 0 / skipLink 0、
 //                          maintenanceNotice 1、emergencyStrip 1、tel:119 と tel:110 は残る
-//   未設定               → actionCard 14 / needGrid 1 / controls 1 / skipLink 1
+//   未設定               → actionCard は正典 lib/disaster-data.ts の actionCards と同数
+//                          （カードは巡回で増減する。固定値で覚えない）/ needGrid 1 /
+//                          controls 1 / skipLink 1
 //
 // reactHydrated が false のときは JS が走っていないので、0件でも「止まっている証拠」にならない。
 

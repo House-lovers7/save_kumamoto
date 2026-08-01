@@ -16,8 +16,11 @@ import {
 //   enecho-ss.meti.go.jp  資源エネルギー庁の災害時情報収集システム（住民拠点SS等検索）。
 //                         2026-07-31 の巡回で fuel カードの導線として追加。震度5強以上の
 //                         地震発生時に給油所の営業状況を都道府県単位で地図表示する公式システム。
+//   town.hikawa.kumamoto.jp  氷川町。2026-08-01 の巡回で追加。運営者表記「氷川町」、
+//                         法人番号 9000020434680、所在地 熊本県八代郡氷川町島地642番地を
+//                         サイト上で確認した。緊急情報ページに水・食料の配布と開設中の避難所が出る。
 const ALLOWED_SOURCE_HOSTS =
-  /^https:\/\/(?:www\.)?(?:pref\.kumamoto\.jp|city\.kumamoto\.jp|tca\.or\.jp|qsr\.mlit\.go\.jp|enecho-ss\.meti\.go\.jp)\//;
+  /^https:\/\/(?:www\.)?(?:pref\.kumamoto\.jp|city\.kumamoto\.jp|tca\.or\.jp|qsr\.mlit\.go\.jp|enecho-ss\.meti\.go\.jp|town\.hikawa\.kumamoto\.jp)\//;
 
 const requiredCategories = [
   "emergency",
