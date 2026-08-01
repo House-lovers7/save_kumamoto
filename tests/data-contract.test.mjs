@@ -19,8 +19,13 @@ import {
 //   town.hikawa.kumamoto.jp  氷川町。2026-08-01 の巡回で追加。運営者表記「氷川町」、
 //                         法人番号 9000020434680、所在地 熊本県八代郡氷川町島地642番地を
 //                         サイト上で確認した。緊急情報ページに水・食料の配布と開設中の避難所が出る。
+//   kumamoto-waterworks.jp   熊本市上下水道局。2026-08-01 の応急給水所カード追加で登録。
+//                         サイトフッターの運営者表記「熊本市上下水道局
+//                         〒862-8620 熊本市中央区水前寺6丁目2-45」と
+//                         Copyright「Kumamoto City Waterworks and Sewerage Bureau」を確認した。
+//                         トップページが緊急情報の表示面（当日の応急給水所の告知が出る）。
 const ALLOWED_SOURCE_HOSTS =
-  /^https:\/\/(?:www\.)?(?:pref\.kumamoto\.jp|city\.kumamoto\.jp|tca\.or\.jp|qsr\.mlit\.go\.jp|enecho-ss\.meti\.go\.jp|town\.hikawa\.kumamoto\.jp)\//;
+  /^https:\/\/(?:www\.)?(?:pref\.kumamoto\.jp|city\.kumamoto\.jp|tca\.or\.jp|qsr\.mlit\.go\.jp|enecho-ss\.meti\.go\.jp|town\.hikawa\.kumamoto\.jp|kumamoto-waterworks\.jp)\//;
 
 const requiredCategories = [
   "emergency",
