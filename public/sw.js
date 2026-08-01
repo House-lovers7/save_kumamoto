@@ -1,5 +1,6 @@
-const CACHE = "kumamoto-action-v2";
+const CACHE = "kumamoto-action-v3";
 const SHELL = ["/", "/manifest.webmanifest", "/favicon.svg"];
+const NAVIGATE_TIMEOUT_MS = 4000;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));
@@ -21,14 +22,19 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), NAVIGATE_TIMEOUT_MS);
     event.respondWith(
-      fetch(request)
+      fetch(request, { signal: controller.signal })
         .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put("/", copy));
+          if (url.pathname === "/" && response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE).then((cache) => cache.put("/", copy));
+          }
           return response;
         })
-        .catch(() => caches.match("/")),
+        .catch(() => caches.match("/"))
+        .finally(() => clearTimeout(timer)),
     );
     return;
   }
