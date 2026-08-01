@@ -124,16 +124,31 @@ test("誤認防止の表示を Web とネイティブの両方が持つ", () => 
       "公式の案内を確認できていません",
       "公式ページで必ず確認する",
       "順番を間違えると取り返しがつきません",
+      // 出典の答えをカード内に出す表示。片方だけ「探しに行かせる」形に戻さない。
+      "出典の「",
+      "開いたページで「",
     ]) {
       assert.ok(source.includes(text), `${name}: 「${text}」が描画されていない`);
     }
-    for (const field of ["unverified", "verifyPoints", "irreversibleOrder"]) {
+    for (const field of ["unverified", "verifyPoints", "irreversibleOrder", "sourceLandmark"]) {
       assert.match(
         source,
         new RegExp(`\\b(card|item)\\.${field}\\b`),
         `${name}: ${field} が配られているのに描画していない`,
       );
     }
+    // facts は正典の visibleFacts() 経由でしか読まない。ここで直に card.facts を
+    // 使うと、その日限りの答えを期限切れ後も出す実装へ簡単に戻れてしまう。
+    assert.match(
+      source,
+      /visibleFacts\((card|item), now\)/,
+      `${name}: facts が配られているのに描画していない（visibleFacts 経由で読む）`,
+    );
+    assert.doesNotMatch(
+      source,
+      /\b(card|item)\.facts\b/,
+      `${name}: facts を直接読まない（期限切れの安全規則を迂回する）`,
+    );
   }
 });
 

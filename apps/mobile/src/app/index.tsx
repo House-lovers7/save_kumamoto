@@ -21,8 +21,10 @@ import {
   formatRelativeTime,
   formatTimestamp,
   isExpired,
+  isLongFact,
   municipalities,
   siteCheckedAt,
+  visibleFacts,
   type ActionCategory,
   type ActionCard,
 } from '@/data/actions';
@@ -56,6 +58,8 @@ export default function HomeScreen() {
   const [expandedSources, setExpandedSources] = useState<Record<string, boolean>>({});
   // 手順から下は既定で畳む。必要な1枚に届くまでのスクロールを短くするため。
   const [expandedDetails, setExpandedDetails] = useState<Record<string, boolean>>({});
+  // 5件を超える答えの一覧（給水所12か所など）だけを畳む。閉じたままでも件数と内訳は読める。
+  const [expandedFacts, setExpandedFacts] = useState<Record<string, boolean>>({});
   // 保存情報の期限切れは時間で変わる。起動時刻で固定せず、開いたままでも切り替わるようにする。
   const [now, setNow] = useState(() => new Date());
 
@@ -144,6 +148,10 @@ export default function HomeScreen() {
 
   function toggleDetail(id: string) {
     setExpandedDetails((current) => ({ ...current, [id]: !current[id] }));
+  }
+
+  function toggleFact(key: string) {
+    setExpandedFacts((current) => ({ ...current, [key]: !current[key] }));
   }
 
   function openOfficial(url: string, name: string) {
@@ -429,6 +437,61 @@ export default function HomeScreen() {
                     </View>
                   )}
 
+                  {/*
+                    出典に書かれている答えそのもの。リンク先で探させないためにカード内へ出す。
+                    畳んだ状態でも読める位置に置く（2026-08-01 ユーザー確定）。
+                    その日限りの答え（dated）は期限切れで消す。「8月1日の給水所」を翌日も
+                    見せることは、終了した場所へ人を向かわせることと同じ。
+                    日付に依存しない答え（問い合わせ先など）は、期限切れでも残す。
+                  */}
+                  {visibleFacts(item, now).map((fact) => {
+                    const factKey = `${item.id}/${fact.label}`;
+                    const long = isLongFact(fact);
+                    const factOpen = expandedFacts[factKey] === true;
+                    return (
+                      <View key={factKey} style={styles.facts}>
+                        {long ? (
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityState={{ expanded: factOpen }}
+                            accessibilityLabel={fact.label}
+                            onPress={() => toggleFact(factKey)}
+                            style={styles.factsToggle}>
+                            <Text
+                              importantForAccessibility="no-hide-descendants"
+                              style={[styles.factsToggleText, { fontSize: 14 * scale }]}>
+                              {fact.label}
+                            </Text>
+                            <Text
+                              importantForAccessibility="no-hide-descendants"
+                              style={styles.factsToggleMark}>
+                              {factOpen ? '▲' : '▼'}
+                            </Text>
+                          </Pressable>
+                        ) : (
+                          <Text style={[styles.factsLabel, { fontSize: 14 * scale }]}>
+                            {fact.label}
+                          </Text>
+                        )}
+                        {(!long || factOpen) && (
+                          <View style={styles.factsList}>
+                            {fact.items.map((value) => (
+                              <View key={value} style={styles.factsItem}>
+                                <Text style={styles.factsBullet}>・</Text>
+                                <Text style={[styles.factsItemText, { fontSize: 14 * scale }]}>
+                                  {value}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+                        <Text style={[styles.factsCite, { fontSize: 11 * scale }]}>
+                          出典の「{fact.citedAs}」より
+                        </Text>
+                      </View>
+                    );
+                  })}
+
                   <View style={styles.sourceSummary}>
                     <Text
                       style={[
@@ -566,6 +629,16 @@ export default function HomeScreen() {
                       ↗
                     </Text>
                   </Pressable>
+
+                  {/*
+                    深いURLが存在しない出典で、開いた最初の画面から探す先を名指しする。
+                    文言は出典の実物からの引用で、巡回のたびに照合する。
+                  */}
+                  {item.sourceLandmark && (
+                    <Text style={[styles.landmark, { fontSize: 13 * scale }]}>
+                      開いたページで「{item.sourceLandmark}」を探してください。
+                    </Text>
+                  )}
                 </View>
               );
             })}
@@ -846,6 +919,51 @@ function createStyles(c: Palette, scale: number) {
     },
     unverifiedTitle: { color: c.warnInk, fontWeight: '900' },
     unverifiedText: { color: c.warnInk, lineHeight: 20 * scale, marginTop: 4 },
+    /*
+      出典に書かれている答えそのもの（場所・時間・住所・電話番号）。畳んだ状態でも
+      読める位置に出るので、手順（steps）より紙面の重みを強くし、カードを開かなくても
+      最初に目へ入るようにする。左の縦線は navy で「ここが答え」と分からせる。
+    */
+    facts: {
+      marginTop: 14,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      borderRadius: 7,
+      borderWidth: 1,
+      borderColor: c.line,
+      borderLeftWidth: 6,
+      borderLeftColor: c.navy,
+      backgroundColor: c.paper,
+    },
+    factsLabel: { color: c.accentInk, fontWeight: '900', lineHeight: 21 * scale },
+    // 5件を超える一覧の開閉。閉じたままでも件数と内訳が読めるラベルを出す（48dp）。
+    factsToggle: {
+      minHeight: 48,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: c.line,
+      backgroundColor: c.chipBg,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+    },
+    factsToggleText: {
+      color: c.accentInk,
+      fontWeight: '900',
+      flexShrink: 1,
+      lineHeight: 20 * scale,
+    },
+    factsToggleMark: { color: c.accentInk, fontSize: 12, fontWeight: '900' },
+    factsList: { marginTop: 10, gap: 8 },
+    factsItem: { flexDirection: 'row', alignItems: 'flex-start' },
+    factsBullet: { color: c.navy, fontWeight: '900' },
+    factsItemText: { flex: 1, color: c.ink, fontWeight: '700', lineHeight: 21 * scale },
+    factsCite: { color: c.muted, fontWeight: '700', marginTop: 10 },
+    // リンク先で探す場所の名指し。公式サイトのボタンの直下に置く。
+    landmark: { color: c.bodyText, fontWeight: '700', lineHeight: 20 * scale, marginTop: 8 },
     steps: {
       marginTop: 16,
       padding: 14,

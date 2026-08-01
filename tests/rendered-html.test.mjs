@@ -46,6 +46,10 @@ test("災害行動ナビをサーバーレンダリングする", async () => {
   assert.match(html, /生活用水/);
   assert.match(html, /順番を間違えると取り返しがつきません/);
   assert.match(html, /公式の案内を確認できていません/);
+  // 出典の答えは、JS が動く前の初期HTMLで読めなければ「探させない」ことにならない。
+  // 期限切れでも残る答え（問い合わせ先など）があるので、時刻に関係なく出ている。
+  assert.match(html, /出典の「/);
+  assert.match(html, /開いたページで「/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });
 

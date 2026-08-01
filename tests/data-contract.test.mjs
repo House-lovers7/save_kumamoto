@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   actionCards,
   isExpired,
+  visibleFacts,
 } from "../lib/disaster-data.ts";
 
 // 出典として許可するドメイン。運営主体が公的機関だと確認できたものだけを個別に列挙する。
@@ -142,6 +143,101 @@ test("確認できていないカードは、何が確認できていないか�
   }
 });
 
+// リンク先で情報を探させないために、出典の核心情報をカード内へ出す（2026-08-01 ユーザー要望）。
+// 出せるのは出典に書かれている記載だけで、住所・時間・電話番号を推測で作らない。
+test("カード内の答えは、出典の記載を短く写したものに限る", () => {
+  for (const card of actionCards) {
+    if (!card.facts) continue;
+    assert.ok(card.facts.length >= 1, `${card.id}: facts が空`);
+    assert.equal(
+      new Set(card.facts.map((fact) => fact.label)).size,
+      card.facts.length,
+      `${card.id}: 同じ見出しの答えが重複している`,
+    );
+    for (const fact of card.facts) {
+      assert.ok(
+        fact.label.trim().length >= 4 && fact.label.length <= 40,
+        `${card.id}: 見出しは4〜40字（${fact.label}）`,
+      );
+      assert.ok(
+        fact.items.length >= 1 && fact.items.length <= 15,
+        `${card.id}/${fact.label}: 1〜15件（${fact.items.length}件）。これを超える一覧はカードに載せない`,
+      );
+      assert.equal(
+        new Set(fact.items).size,
+        fact.items.length,
+        `${card.id}/${fact.label}: 項目が重複している`,
+      );
+      for (const item of fact.items) {
+        assert.ok(
+          item.trim().length >= 4 && item.length <= 60,
+          `${card.id}/${fact.label}: 4〜60字（${item}）`,
+        );
+        assert.doesNotMatch(
+          item,
+          /(必ず(開|使え|入れ|もらえ|通れ)|絶対に安全|在庫あり|営業中です|通行できます|受け入れています)/,
+          `${card.id}: 断定表現を含めない（${item}）`,
+        );
+      }
+      assert.ok(
+        fact.citedAs.trim().length >= 4,
+        `${card.id}/${fact.label}: 出典のどこに書かれているかを citedAs に書く`,
+      );
+    }
+  }
+});
+
+// 確認できていないカードが、答えを持っているかのように見えてはいけない。
+// unavailable のカードに出してよいのは「代わりにどこへ聞けばよいか」だけ。
+test("確認できていないカードの答えは問い合わせ先に限る", () => {
+  for (const card of actionCards) {
+    if (card.sourceStatus !== "unavailable" || !card.facts) continue;
+    for (const fact of card.facts) {
+      assert.match(
+        fact.label,
+        /窓口|問い合わせ|問合せ|相談|連絡先/,
+        `${card.id}: unavailable なカードに出せるのは問い合わせ先だけ（${fact.label}）`,
+      );
+    }
+  }
+});
+
+// 「今日どこで何時に受け取れるか」が本体のカード。リンクを開かせて探させる形へ
+// 戻したら、ここで止める。深いURLが存在しない出典なので、探す先の名指しも必須にする。
+test("当日限りのカードは、その日の場所と時間をカード内に持つ", () => {
+  for (const id of ["water-station", "food-hikawa"]) {
+    const card = actionCards.find((item) => item.id === id);
+    assert.ok(card, `${id} カードがない`);
+    assert.ok(card.facts && card.facts.length >= 1, `${id}: facts が無い`);
+    assert.ok(
+      card.facts.some((fact) => fact.dated === true),
+      `${id}: その日限りの内容には dated を付ける（期限切れで消すため）`,
+    );
+    assert.ok(
+      typeof card.sourceLandmark === "string" && card.sourceLandmark.trim().length >= 4,
+      `${id}: 深いURLが無い出典なので sourceLandmark で探す先を名指しする`,
+    );
+  }
+});
+
+// 深いURLが存在しない出典で、開いた最初の画面から探す先を名指しするための目印。
+// 出典の実物にある見出し文言をそのまま持ち、巡回のたびに照合する。
+test("探す先の名指しは、出典の見出し文言をそのまま持つ", () => {
+  for (const card of actionCards) {
+    if (!card.sourceLandmark) continue;
+    assert.ok(
+      card.sourceLandmark.trim().length >= 4 && card.sourceLandmark.length <= 60,
+      `${card.id}: sourceLandmark は4〜60字（${card.sourceLandmark}）`,
+    );
+    // 描画側が「」で囲うので、データ側で二重に付けない。
+    assert.doesNotMatch(
+      card.sourceLandmark,
+      /^[「『]|[」』]$/,
+      `${card.id}: カギ括弧は描画側が付ける`,
+    );
+  }
+});
+
 // 混同すると健康被害や無駄足になる区別は、出典ページに実際に書かれているものだけを載せる。
 test("確認すべき区別は選択肢と理由をそろえて持つ", () => {
   for (const card of actionCards) {
@@ -195,6 +291,23 @@ test("順序を誤ると取り返しがつかない手続きは短く言い切�
         `${card.id}: ${item}`,
       );
     }
+  }
+});
+
+// 「8月1日の給水所」を8月2日にも見せることは、終了した給水所へ人を向かわせることと同じ。
+// 逆に、問い合わせ先のように日付へ依存しない答えは、期限切れでも消してはいけない。
+test("その日限りの答えは期限切れで消え、日付に依存しない答えは残る", () => {
+  for (const card of actionCards) {
+    if (!card.facts?.length) continue;
+    const boundary = new Date(card.expiresAt);
+    const before = visibleFacts(card, new Date(boundary.getTime() - 1000));
+    const after = visibleFacts(card, boundary);
+    assert.deepEqual(before, card.facts, `${card.id}: 期限内はすべての答えが出る`);
+    assert.deepEqual(
+      after,
+      card.facts.filter((fact) => !fact.dated),
+      `${card.id}: 期限切れで残るのは日付に依存しない答えだけ`,
+    );
   }
 });
 

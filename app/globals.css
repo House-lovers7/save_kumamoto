@@ -646,6 +646,107 @@ footer {
 }
 
 /*
+  出典に書かれている答えそのもの（場所・時間・住所・電話番号）。
+  リンク先で探させないためにカード内へ出す（2026-08-01 ユーザー要望）。
+  畳んだ状態でも読める位置に置くので、手順（.steps）より紙面の重みを強くし、
+  カードを開かなくても最初に目へ入るようにする。
+*/
+.facts {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--navy);
+  border-radius: 7px;
+}
+
+.facts__label {
+  display: block;
+  font-size: 0.92em;
+  font-weight: 900;
+  line-height: 1.5;
+  color: var(--accent-ink);
+}
+
+.facts ul {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.facts li {
+  position: relative;
+  padding-left: 1.1em;
+  font-size: 0.92em;
+  font-weight: 700;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.facts li::before {
+  content: "・";
+  position: absolute;
+  left: 0;
+  color: var(--navy);
+}
+
+/*
+  5件を超える一覧はここへ畳む。閉じたままでも件数と内訳が読めるラベルを付けるので、
+  公式サイトを探索させることにはならない（アプリ内の1タップで開く）。
+*/
+.facts__more > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--chip-bg);
+  color: var(--accent-ink);
+  font-size: 0.92em;
+  font-weight: 900;
+  line-height: 1.4;
+  cursor: pointer;
+  list-style: none;
+}
+
+.facts__more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.facts__more > summary::after {
+  content: "▼";
+  font-size: 0.8em;
+}
+
+.facts__more[open] > summary::after {
+  content: "▲";
+}
+
+.facts__cite {
+  margin: 10px 0 0;
+  font-size: 0.74em;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/*
+  リンク先で探す場所の名指し。深いURLが存在しない出典（1ページに全告知が縦積み等）で、
+  開いた最初の画面から迷わせないための目印。文言は出典の実物から引用する。
+*/
+.primary-link__landmark {
+  margin: 8px 0 0;
+  font-size: 0.8em;
+  font-weight: 700;
+  line-height: 1.55;
+  color: var(--body-text);
+}
+
+/*
   混同すると健康被害・無駄足につながる区別。読み飛ばされると意味がないので、
   手順と同じ紙面の重みを持たせつつ、左の縦線で「ここは確認項目」と分からせる。
 */

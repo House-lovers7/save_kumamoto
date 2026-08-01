@@ -7,8 +7,10 @@ import {
   formatRelativeTime,
   formatTimestamp,
   isExpired,
+  isLongFact,
   municipalities,
   siteCheckedAt,
+  visibleFacts,
   type ActionCategory,
 } from "@/lib/disaster-data";
 
@@ -350,6 +352,37 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
                         <p>{card.unverified}</p>
                       </div>
                     )}
+                    {/*
+                      出典に書かれている答えそのもの。リンク先で探させないためにカード内へ出す。
+                      畳んだ状態でも読める位置に置く（2026-08-01 ユーザー確定）。
+                      その日限りの答え（dated）は期限切れで消す。「8月1日の給水所」を翌日も
+                      見せることは、終了した場所へ人を向かわせることと同じ。
+                      日付に依存しない答え（問い合わせ先など）は、期限切れでも残す。
+                    */}
+                    {visibleFacts(card, now).map((fact) => (
+                      <div className="facts" key={fact.label} suppressHydrationWarning>
+                        {isLongFact(fact) ? (
+                          <details className="facts__more">
+                            <summary>{fact.label}</summary>
+                            <ul>
+                              {fact.items.map((item) => (
+                                <li key={item}>{item}</li>
+                              ))}
+                            </ul>
+                          </details>
+                        ) : (
+                          <>
+                            <strong className="facts__label">{fact.label}</strong>
+                            <ul>
+                              {fact.items.map((item) => (
+                                <li key={item}>{item}</li>
+                              ))}
+                            </ul>
+                          </>
+                        )}
+                        <p className="facts__cite">出典の「{fact.citedAs}」より</p>
+                      </div>
+                    ))}
                     <div className="source-summary" suppressHydrationWarning>
                       <span className={expired ? "source-summary__status is-expired" : "source-summary__status"}>
                         {expired
@@ -445,6 +478,15 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
                         {card.action}
                         <span aria-hidden="true">↗</span>
                       </a>
+                    )}
+                    {/*
+                      深いURLが存在しない出典で、開いた最初の画面から探す先を名指しする。
+                      文言は出典の実物からの引用で、巡回のたびに照合する。
+                    */}
+                    {card.sourceLandmark && (
+                      <p className="primary-link__landmark">
+                        開いたページで「{card.sourceLandmark}」を探してください。
+                      </p>
                     )}
                   </div>
                 </article>
