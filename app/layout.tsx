@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     "困りごとから、熊本の公式な災害・生活支援情報へ30秒でたどり着くための案内です。",
   applicationName: "くまもと いまどうするナビ",
   manifest: "/manifest.webmanifest",
-  robots: { index: true, follow: true },
+  robots: { index: false, follow: false },
   icons: {
     icon: "/favicon.svg",
     apple: "/favicon.svg",
