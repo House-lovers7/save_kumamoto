@@ -51,7 +51,7 @@
 └───────────────────────────────────────────┘
 ```
 
-### アクションカードの構成（上から順。`app/home-client.tsx:318-492` の `<article className="action-card">`）
+### アクションカードの構成（上から順。`app/home-client.tsx:322-512` の `<article className="action-card">`）
 
 | 要素 | 出す条件 | 意図 |
 |---|---|---|
@@ -59,8 +59,9 @@
 | メタ（カテゴリ / オフライン保存 / **公式情報** or **未確認** / 期限切れ） | 常時 | `sourceStatus === "unavailable"` に「公式情報」と付けない |
 | 見出し | 常時 | |
 | 概要 **または** 期限切れメッセージ | 排他（`isExpired()`で分岐） | 期限切れ時は場所・時間を出さない |
+| **受付時間の案内**（`serviceWindowNotice()`） | 期限内 かつ `availableWindows` あり（当日限り2枚） | 期限内でも現地が閉まっている時間を出す。期限切れ表示とは排他 |
 | **公式の案内を確認できていません** | `sourceStatus === "unavailable"` | 手順より**前**に出す |
-| `facts`（出典から写した答え） | `visibleFacts()` が返す件数 > 0 | 5件超は `<details>` で開閉（`FACT_INLINE_LIMIT = 4`, `lib/disaster-data.ts:1012`） |
+| `facts`（出典から写した答え） | `visibleFacts()` が返す件数 > 0 | 5件超は `<details>` で開閉（`FACT_INLINE_LIMIT = 4`, `lib/disaster-data.ts:1040`） |
 | 出典・有効期限のサマリ行 | 常時 | |
 | 手順と注意（`<details>` で既定は畳む） | 常時 | JS前でも開ける。「まずやること」番号付き手順 |
 | **公式ページで必ず確認する: ラベル**（`verifyPoints`） | `verifyPoints` あり | 期限切れでも隠さない |
@@ -69,6 +70,19 @@
 | 出典と時刻の詳細（さらに畳む） | 常時 | 出典・案内更新・取得・接続確認・有効期限 |
 | 公式サイトを開くリンク | 常時 | オフライン時は無効化 |
 | `sourceLandmark`（探す先の名指し） | `sourceLandmark` あり | 深いURLが無い出典向け |
+
+#### 受付時間の案内の出し分け
+
+期限（この情報を信じてよいか）とは別に、受付時間（行けば受け取れるか）を出す。**断定してよい方向が非対称**であることが要点で、色の強さも「言い切れるかどうか」に合わせる。
+
+| 状態 | 見出し | 色 | なぜその強さか |
+|---|---|---|---|
+| `before` | 本日の受付はまだ始まっていません | 黄（`--warn-*`） | 待てば開く。止める必要はない |
+| `open` | **告知では**受付時間内です | 控えめな緑（`--calm-*`） | 中止・早期終了がありうるので言い切れない。緑を成功色にすると「行けば必ずもらえる」と読ませる |
+| `between` | いまは受付時間外です | 赤（`--red`/`--red-soft`） | 告知の時刻からの帰結なので言い切れる。無駄足を止める表示なので最も強くする |
+| `closed` | 本日の受付は終了しました | 同上 | 通常は期限切れ表示が先に立つ（最終枠の終了＝`expiresAt`） |
+
+`open` では終了までの残り（`formatRemaining()`、切り捨て）も出す。「17:00まで」だけでは移動時間を足して間に合わないことに気づけないため。どの状態でも「出発前に当日の掲載を確認してください」を必ず添える。
 
 ### 状態と分岐（`app/home-client.tsx`）
 
@@ -97,11 +111,11 @@ stateDiagram-v2
 | `emergency-strip`（119・110） | あり | **残る** | あり |
 | `maintenance-notice`（緊急縮退モードの告知文） | 無し | **表示される** | あり |
 
-（縮退中に無反応の操作子を残さない設計。見出しブロック・困りごとグリッド・絞り込み・スキップリンクは行き先の`#actions`ごと消えるため、`app/home-client.tsx:168-505` の5箇所の `{!emergencyMode && ...}`（168 / 247 / 258 / 273 / 293行）により描画自体を外している）
+（縮退中に無反応の操作子を残さない設計。見出しブロック・困りごとグリッド・絞り込み・スキップリンクは行き先の`#actions`ごと消えるため、`app/home-client.tsx:169-525` の5箇所の `{!emergencyMode && ...}`（169 / 248 / 259 / 274 / 294行）により描画自体を外している）
 
-「テストで固定」列は `tests/emergency-mode.test.mjs:47-63` がHTML出力を直接検査している項目。`need-lead` だけは同テストの検査対象に入っていないため、現状はコードの条件分岐（`app/home-client.tsx:247-252`）のみが根拠になる。
+「テストで固定」列は `tests/emergency-mode.test.mjs:47-63` がHTML出力を直接検査している項目。`need-lead` だけは同テストの検査対象に入っていないため、現状はコードの条件分岐（`app/home-client.tsx:248-253`）のみが根拠になる。
 
-### クライアント状態（`app/home-client.tsx:39-77`）
+### クライアント状態（`app/home-client.tsx:40-78`）
 
 | state | 初期値 | 永続化 | 備考 |
 |---|---|---|---|
@@ -112,7 +126,7 @@ stateDiagram-v2
 | `offline` | `false` | なし | `online`/`offline` イベント |
 | `now` | 現在時刻 | なし | 60秒ごとに更新（失効表示の切り替え、`setInterval`） |
 
-`localStorage` の読み出しは `useEffect` 内の `queueMicrotask` で行い、サーバーとクライアントの初期描画を一致させる（hydration不一致回避、`app/home-client.tsx:48-63`）。
+`localStorage` の読み出しは `useEffect` 内の `queueMicrotask` で行い、サーバーとクライアントの初期描画を一致させる（hydration不一致回避、`app/home-client.tsx:49-64`）。
 
 ## W-2 `/status` 運用ステータス（Web, Server Component）
 
@@ -140,11 +154,11 @@ stateDiagram-v2
 
 ## N-1 `index`（モバイル・ホーム画面）
 
-W-1とほぼ同一の構成をExpo Router + React Nativeで再実装している（`apps/mobile/src/app/index.tsx`）。緊急ストリップ→ブランド→文字サイズ→鮮度バー→「いま困っていることは？」見出し→困りごとグリッド→市町村チップ→キーワード検索→カテゴリチップ→アクションカード一覧→オフライン行動カードへの導線パネル→安全パネル→フッター、の順（`apps/mobile/src/app/index.tsx:168-698`）。
+W-1とほぼ同一の構成をExpo Router + React Nativeで再実装している（`apps/mobile/src/app/index.tsx`）。緊急ストリップ→ブランド→文字サイズ→鮮度バー→「いま困っていることは？」見出し→困りごとグリッド→市町村チップ→キーワード検索→カテゴリチップ→アクションカード一覧→オフライン行動カードへの導線パネル→安全パネル→フッター、の順（`apps/mobile/src/app/index.tsx:182-742`）。
 
-**Web/モバイルのパリティ状況（現行コードで確認）**: `docs/DESIGN.md`（2026-07-31時点）は「`verifyPoints` / `irreversibleOrder` / `unverified` はネイティブへ生成物として配られているが、N-1の画面にはまだ描画していない」と記録しているが、**現在の `apps/mobile/src/app/index.tsx` はこの3つをすべて描画している**（`unverified`: 429-438行、`verifyPoints`: 550-568行、`irreversibleOrder`: 571-587行）。緊急停止フラグ（`EMERGENCY_MODE`）に相当する経路はモバイルには存在せず、`apps/mobile/src` 配下に該当する参照は無い（`docs/RELEASE_AUDIT.md`「停止の到達範囲」の「一切届かない」という記述と一致）。
+**Web/モバイルのパリティ状況（現行コードで確認）**: `docs/DESIGN.md`（2026-07-31時点）は「`verifyPoints` / `irreversibleOrder` / `unverified` はネイティブへ生成物として配られているが、N-1の画面にはまだ描画していない」と記録しているが、**現在の `apps/mobile/src/app/index.tsx` はこの3つをすべて描画している**（`unverified`: 476-485行、`verifyPoints`: 597-609行、`irreversibleOrder`: 618-634行）。緊急停止フラグ（`EMERGENCY_MODE`）に相当する経路はモバイルには存在せず、`apps/mobile/src` 配下に該当する参照は無い（`docs/RELEASE_AUDIT.md`「停止の到達範囲」の「一切届かない」という記述と一致）。
 
-モバイル独自の開閉状態として `expandedSources` / `expandedDetails` / `expandedFacts` を持つ（`apps/mobile/src/app/index.tsx:58-62`）。Webの `<details>` に相当する挙動をReact Nativeでは自前のstateで実装している。
+モバイル独自の開閉状態として `expandedSources` / `expandedDetails` / `expandedFacts` を持つ（`apps/mobile/src/app/index.tsx:70-74`）。Webの `<details>` に相当する挙動をReact Nativeでは自前のstateで実装している。
 
 ## N-2 `offline-guides`（オフライン行動カード）
 
@@ -186,4 +200,4 @@ flowchart LR
     end
 ```
 
-WebとMobileは独立したアプリで、画面間の相互遷移（Web→Mobile等）は無い。各カードの「公式サイトを開く」ボタンは、いずれもアプリ外（公式サイト）へ新規タブ/ブラウザで遷移する（Web: `target="_blank"`、モバイル: `Linking.openURL()` を確認ダイアログ経由で呼ぶ。`apps/mobile/src/app/index.tsx:157-166`）。
+WebとMobileは独立したアプリで、画面間の相互遷移（Web→Mobile等）は無い。各カードの「公式サイトを開く」ボタンは、いずれもアプリ外（公式サイト）へ新規タブ/ブラウザで遷移する（Web: `target="_blank"`、モバイル: `Linking.openURL()` を確認ダイアログ経由で呼ぶ。`apps/mobile/src/app/index.tsx:169-178`）。

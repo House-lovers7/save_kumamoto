@@ -109,7 +109,7 @@ sequenceDiagram
 
 `readEmergencyMode()` は関数の中でしか `process.env` を読まない実装で、モジュールのトップレベルで値を確定させない（`vinext start` はNode常駐のため一度しか評価されず、切り替えが効かなくなるのを防ぐ。`lib/emergency-mode.ts:14-21`）。クライアントコンポーネントからは呼ばない（クライアントバンドルでは `process.env` が空オブジェクトに置換され常にfalseになる）。この3条件は `tests/emergency-mode.test.mjs` がソースコードの形そのものを検査して固定している（`tests/emergency-mode.test.mjs:104-125`）。
 
-縮退中に消える要素・残る要素は `app/home-client.tsx:168-505` の5箇所の条件付きレンダリング（`{!emergencyMode && ...}`。168 / 247 / 258 / 273 / 293行）で実装されており、詳細は `screens.md` を参照。
+縮退中に消える要素・残る要素は `app/home-client.tsx:169-525` の5箇所の条件付きレンダリング（`{!emergencyMode && ...}`。169 / 248 / 259 / 274 / 294行）で実装されており、詳細は `screens.md` を参照。
 
 ## 3. データ更新フロー
 

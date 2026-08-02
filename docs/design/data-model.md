@@ -20,7 +20,7 @@
 
 ## 実体はTypeScriptのソースコード配列
 
-データの実体は `lib/disaster-data.ts` に**ソースコードとして直接書かれた配列**（`actionCards: ActionCard[]`, `lib/disaster-data.ts:127`）で、ビルド時にバンドルへ埋め込まれる。実行時に読み書きする永続ストアは無い。
+データの実体は `lib/disaster-data.ts` に**ソースコードとして直接書かれた配列**（`actionCards: ActionCard[]`, `lib/disaster-data.ts:143`）で、ビルド時にバンドルへ埋め込まれる。実行時に読み書きする永続ストアは無い。
 
 ## ER図（論理データモデル。DBスキーマではない）
 
@@ -50,6 +50,7 @@ erDiagram
         string fetchedAt "取得時刻"
         string checkedAt "巡回で確認した時刻"
         string expiresAt "有効期限。既定は checkedAt+24h、一部は当日終了時刻"
+        string availableWindows "任意。当日の受付時間帯（label/start/end の配列）。期限とは別軸"
         string sourceStatus FK "official | unavailable | conflict"
         string unverified "任意。unavailable のとき必須。何が確認できていないか"
         boolean offline "オフラインでも読める内容か（端末保存の可否指標）"
@@ -82,7 +83,7 @@ erDiagram
     }
 ```
 
-（`IRREVERSIBLE_STEP` / `STEP` / `KEYWORD` は文字列配列なので独立エンティティとしては図から省略し、上のリレーション行にのみ表記。フィールド定義は `lib/disaster-data.ts:14-78` の `ActionCard` 型そのもの）
+（`IRREVERSIBLE_STEP` / `STEP` / `KEYWORD` は文字列配列なので独立エンティティとしては図から省略し、上のリレーション行にのみ表記。フィールド定義は `lib/disaster-data.ts:14-94` の `ActionCard` 型そのもの）
 
 ## 現在のデータ量（2026-08-02時点、`lib/disaster-data.ts` から集計）
 
@@ -101,11 +102,11 @@ erDiagram
 
 `sourceStatus: "unavailable"` のカードは3件（`food-and-supplies`, `toilet`, `infant-care`）。`conflict` は型に定義済みだが現在使っているカードは無い（`docs/DESIGN.md:573` の記述をコード側でも再確認済み）。
 
-**この2つの数え方について。** カードは `sourceStatus` を直接書かず、`patrolled()` ヘルパー（`lib/disaster-data.ts:119-124`。第2引数の既定は `"official"`）経由で設定する。そのため `grep 'sourceStatus: "unavailable"'` のような値リテラル検索は、実在する3件に対しても0件を返してしまい根拠にならない。実際に使った根拠は次の2つ。
+**この2つの数え方について。** カードは `sourceStatus` を直接書かず、`patrolled()` ヘルパー（`lib/disaster-data.ts:135-141`。第2引数の既定は `"official"`）経由で設定する。そのため `grep 'sourceStatus: "unavailable"'` のような値リテラル検索は、実在する3件に対しても0件を返してしまい根拠にならない。実際に使った根拠は次の2つ。
 
 | 確認対象 | 方法 | 結果 |
 |---|---|---|
-| `unavailable` の件数 | `patrolled(..., "unavailable")` の呼び出し箇所（`lib/disaster-data.ts:352`, `514`, `604`）と、`unavailable` のとき必須になる `unverified` フィールドの出現箇所（`353`, `515`, `605`）を突き合わせ | 3件・両者一致 |
+| `unavailable` の件数 | `patrolled(..., "unavailable")` の呼び出し箇所（`lib/disaster-data.ts:373`, `542`, `632`）と、`unavailable` のとき必須になる `unverified` フィールドの出現箇所（`374`, `543`, `633`）を突き合わせ | 3件・両者一致 |
 | `conflict` の使用 | `grep -n conflict lib/disaster-data.ts` | ヒットは型定義 `lib/disaster-data.ts:12` の1行のみ（＝カードでの使用0件） |
 
 ## 正典 → ネイティブ生成の関係
@@ -125,7 +126,7 @@ erDiagram
 
 中間の `municipalities` / `categoryLabels` / `actionCards` はJavaScriptの値として再構築され、`actionCards` は `JSON.stringify(actionCards, null, 2)` でそのまま埋め込まれる（`scripts/generate-mobile-data.mjs:36-63`）。マーカー文字列を消す・並びを変えると生成処理が例外を投げて止まる（`scripts/generate-mobile-data.mjs:23-29`）。`ActionCard` にフィールドを追加すれば自動的にネイティブへ配られる。
 
-`tests/mobile-parity.test.mjs` が「生成物が正典と `deepEqual` で一致すること」と「再生成し忘れが無いこと」を機械的に固定している。`visibleFacts()`（期限切れの `dated: true` な `facts` を非表示にする関数）もWeb・ネイティブ双方がこの共通関数経由でしか描画しないことを同テストが確認する（`docs/DESIGN.md:590` の記述と実装 `lib/disaster-data.ts:1049-1052` を照合）。
+`tests/mobile-parity.test.mjs` が「生成物が正典と `deepEqual` で一致すること」と「再生成し忘れが無いこと」を機械的に固定している。`visibleFacts()`（期限切れの `dated: true` な `facts` を非表示にする関数）もWeb・ネイティブ双方がこの共通関数経由でしか描画しないことを同テストが確認する（`docs/DESIGN.md:590` の記述と実装 `lib/disaster-data.ts:1077-1080` を照合）。
 
 ## 制約（テストで機械的に守っているもの。`tests/data-contract.test.mjs`）
 
@@ -146,16 +147,26 @@ erDiagram
 | `irreversibleOrder` | 2〜5件・各5〜60文字 |
 | 検索到達性 | 「こども」「くすり」「みず」等18語から意図したカードへ到達すること |
 | カテゴリ網羅 | R1必須8カテゴリすべてを備える |
-| 失効境界 | `now.getTime() >= expiresAt` で失効側へ倒れる（`isExpired()`, `lib/disaster-data.ts:1037-1039`） |
+| 失効境界 | `now.getTime() >= expiresAt` で失効側へ倒れる（`isExpired()`, `lib/disaster-data.ts:1065-1067`） |
+| `availableWindows` | 各枠 `start < end`／時刻順で重ならない／全枠が `checkedAt` と同じ日（JST）／**最終枠の `end` は `expiresAt` と一致**／持つカードは `caution` に「出発前」を含む |
+| 受付時間の境界 | `start <= now < end` を「開いている」とする（`serviceWindow()`）。開始は含み終了は含まない＝閉まっている方へ倒す |
+
+### 期限と受付時間は別の軸
+
+`expiresAt` は「この情報を信じてよいか」、`availableWindows` は「行けば受け取れるか」を表す。片方だけでは無駄足を防げない。氷川町の配布は9:00〜11:00と15:00〜17:00の2回で `expiresAt` は17:00のため、`availableWindows` が無かった間は**11:00〜15:00の4時間、誰もいないのにカードが「有効」**だった。
+
+`expiresAt` と `availableWindows` は毎日の巡回で両方を当日分へ更新する。片方だけ更新した状態は上の制約（最終枠の `end` ＝ `expiresAt`、全枠が `checkedAt` と同日）で `npm test` が落ちる。
+
+判定と文言はどちらも正典（`serviceWindow()` / `serviceWindowNotice()`）に置き、Web とネイティブが同じものを使う。文言は断定の方向が非対称で、受付時間外は言い切り、受付時間内は「告知では」を付けて中止・早期終了の可能性を必ず添える。
 
 ## 端末に保存されるもの
 
-サーバー側に利用者データは無い。端末側は次のみ（`app/home-client.tsx:49-61, 146-154`）。
+サーバー側に利用者データは無い。端末側は次のみ（`app/home-client.tsx:50-62, 147-155`）。
 
 | 保存先 | キー | 内容 | 個人を識別するか |
 |---|---|---|---|
 | `localStorage`（Web） | `relief-area` | 選んだ市町村名 | しない |
 | `localStorage`（Web） | `relief-text-scale` | 文字サイズ（`standard`/`large`/`xlarge`） | しない |
-| `localStorage`（Web、旧キー） | `relief-large-text` | 読み取り時に `relief-text-scale` へ移行（`app/home-client.tsx:50-61`） | しない |
+| `localStorage`（Web、旧キー） | `relief-large-text` | 読み取り時に `relief-text-scale` へ移行（`app/home-client.tsx:51-62`） | しない |
 | Cache Storage（Web） | `kumamoto-action-v3` | HTMLと静的アセット（`public/sw.js:1`） | しない |
 | `AsyncStorage`（モバイル） | `AREA_KEY = "relief-area"`（`apps/mobile/src/theme.ts:104`） | 選んだ市町村名（`apps/mobile/src/app/index.tsx:66-71, 135-138`） | しない |
