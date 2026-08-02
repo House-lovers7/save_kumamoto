@@ -9,6 +9,7 @@ import {
   isExpired,
   isLongFact,
   municipalities,
+  serviceWindowNotice,
   siteCheckedAt,
   visibleFacts,
   type ActionCategory,
@@ -314,6 +315,9 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
           <div className="action-list">
             {filtered.map((card) => {
               const expired = isExpired(card, now);
+              // 受付時間の案内は期限内のカードにだけ出す。期限切れの表示とは排他で、
+              // 「確認できません」と「受付時間内です」を同時に並べない。
+              const windowNotice = !expired ? serviceWindowNotice(card, now) : null;
               return (
                 <article className="action-card" key={card.id}>
                   <div className="action-card__icon" aria-hidden="true">{card.icon}</div>
@@ -340,6 +344,22 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
                       </div>
                     ) : (
                       <p>{card.summary}</p>
+                    )}
+                    {/*
+                      期限（この情報を信じてよいか）とは別に、受付時間（行けば受け取れるか）を出す。
+                      期限内でも、氷川町の配布なら 11:00〜15:00 は誰もいない。ここを出さないと
+                      アプリが閉まっている場所へ人を向かわせる。着いたら終わっていた、は
+                      被災者にとって心理的にも体力的にも損失が最も大きい失敗なので、手順より先に出す。
+                    */}
+                    {windowNotice && (
+                      <div
+                        className={`service-window service-window--${windowNotice.tone}`}
+                        role="status"
+                        suppressHydrationWarning
+                      >
+                        <strong>{windowNotice.headline}</strong>
+                        <p>{windowNotice.detail}</p>
+                      </div>
                     )}
                     {/*
                       リンクは生きているが、そのページにこの話題の案内が無い状態。

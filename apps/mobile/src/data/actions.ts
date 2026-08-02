@@ -66,6 +66,22 @@ export type ActionCard = {
   expiresAt: string;
   sourceStatus: SourceStatus;
   /**
+   * 出典の告知に書かれている、その日の受付時間帯。
+   *
+   * expiresAt とは別の軸。expiresAt は「この情報をいつまで信じてよいか」で、こちらは
+   * 「行けば受け取れる時間はいつか」。両方を持たないと、期限内なのに現地は閉まっている
+   * 時間帯（氷川町の配布なら 11:00〜15:00）に人を向かわせる。着いたら終わっていた、は
+   * 被災者にとって心理的にも体力的にも最も損失が大きい失敗なので、分けて持つ。
+   *
+   * 入れてよいのは出典の告知に実際に書かれている時刻だけで、推測で作らない。
+   * 「毎日8時から開くはず」のような日付非依存の一般化もしない（告知は当日限り）。
+   *
+   * 最後の枠の end は expiresAt と一致させる（当日限りカードの失効＝最終受付の終了）。
+   * tests/data-contract.test.mjs がこれを固定しているので、毎日の巡回で当日分へ
+   * 更新するときに片方だけ直すと npm test が落ちる。
+   */
+  availableWindows?: { label: string; start: string; end: string }[];
+  /**
    * 出典ページで必ず区別して確認する項目。混同すると健康被害や無駄足につながる。
    * options には出典ページに実際に書かれている区分だけを入れる。区分を推測で作らない。
    */
@@ -246,6 +262,13 @@ export const actionCards: ActionCard[] = [
     "checkedAt": "2026-08-01T11:25:00+09:00",
     "expiresAt": "2026-08-01T19:00:00+09:00",
     "sourceStatus": "official",
+    "availableWindows": [
+      {
+        "label": "応急給水",
+        "start": "2026-08-01T08:00:00+09:00",
+        "end": "2026-08-01T19:00:00+09:00"
+      }
+    ],
     "areas": [
       "熊本市"
     ],
@@ -424,6 +447,18 @@ export const actionCards: ActionCard[] = [
     "checkedAt": "2026-08-01T11:25:00+09:00",
     "expiresAt": "2026-08-01T17:00:00+09:00",
     "sourceStatus": "official",
+    "availableWindows": [
+      {
+        "label": "第1回",
+        "start": "2026-08-01T09:00:00+09:00",
+        "end": "2026-08-01T11:00:00+09:00"
+      },
+      {
+        "label": "第2回",
+        "start": "2026-08-01T15:00:00+09:00",
+        "end": "2026-08-01T17:00:00+09:00"
+      }
+    ],
     "areas": [
       "氷川町"
     ],
@@ -1188,4 +1223,130 @@ export function isExpired(card: ActionCard, now = new Date()) {
 export function visibleFacts(card: ActionCard, now = new Date()) {
   const expired = isExpired(card, now);
   return (card.facts ?? []).filter((fact) => !fact.dated || !expired);
+}
+
+export type ServiceWindow = { label: string; start: string; end: string };
+
+/**
+ * 受付時間帯から見た、その瞬間の状態。Web とネイティブが同じ規則を使うためにここへ置く。
+ *
+ * - `unknown`: 受付時間帯を持たないカード。表示を足さない（既存カードの挙動を変えない）
+ * - `before` : 最初の枠より前。今から向かうと開く前に着く
+ * - `open`   : 枠の中。**告知どおりなら**受け取れる
+ * - `between`: 枠と枠の間。**現地は閉まっている**
+ * - `closed` : 最終枠より後。通常は isExpired が先に立つ（最終枠の end ＝ expiresAt のため）
+ *
+ * 境界は `start <= now < end` を「開いている」とする。開始は含み、終了は含まない。
+ * isExpired が `now >= expiresAt` で失効側へ倒れるのと向きは逆だが、どちらも
+ * 「閉まっている方へ倒す」という意味で安全側で揃っている。
+ *
+ * この関数は嘘をつく方向が非対称であることを前提にしている。「時間外」は告知に
+ * 書かれた事実から断定してよいが、「時間内」は中止・早期終了がありうるので
+ * 断定してはいけない。文言側でその差を付ける（docs/design/screens.md）。
+ */
+export function serviceWindow(
+  card: ActionCard,
+  now = new Date(),
+):
+  | { state: "unknown" }
+  | { state: "before"; next: ServiceWindow }
+  | { state: "open"; current: ServiceWindow }
+  | { state: "between"; next: ServiceWindow }
+  | { state: "closed" } {
+  const windows = card.availableWindows;
+  if (!windows || windows.length === 0) return { state: "unknown" };
+
+  const at = now.getTime();
+  const sorted = [...windows].sort(
+    (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
+  );
+
+  for (const [index, window] of sorted.entries()) {
+    const start = new Date(window.start).getTime();
+    const end = new Date(window.end).getTime();
+    // 最初の枠より前は「まだ始まっていない」、2つ目以降の枠の前は「いまは間の時間」。
+    // 前者は待てば開くが、後者は一度閉まっているので、利用者に伝えるべきことが違う。
+    if (at < start) return index === 0 ? { state: "before", next: window } : { state: "between", next: window };
+    if (at < end) return { state: "open", current: window };
+  }
+  return { state: "closed" };
+}
+
+/**
+ * いまから指定時刻までの残り。`formatRelativeTime` の未来向け。
+ *
+ * 「17:00まで」だけでは、移動時間を足すと間に合わないことに気づけない。
+ * 切り捨てで出す（「あと1時間」と言って59分しかない、を作らない）。
+ */
+export function formatRemaining(value: string, now: Date) {
+  const diffMinutes = Math.floor((new Date(value).getTime() - now.getTime()) / 60000);
+  if (diffMinutes < 1) return "まもなく終了";
+  if (diffMinutes < 60) return `あと約${diffMinutes}分`;
+  const hours = Math.floor(diffMinutes / 60);
+  const minutes = diffMinutes % 60;
+  if (hours >= 24) return `あと約${Math.floor(hours / 24)}日`;
+  return minutes === 0 ? `あと約${hours}時間` : `あと約${hours}時間${minutes}分`;
+}
+
+/** 受付時間帯の表示用。出典の告知が「9:00〜11:00」と書く形に合わせる。 */
+export function formatClock(value: string) {
+  return new Intl.DateTimeFormat("ja-JP", {
+    hour: "numeric",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: "Asia/Tokyo",
+  }).format(new Date(value));
+}
+
+/**
+ * 受付時間帯をそのまま利用者向けの一文にしたもの。Web とネイティブで同じ文言を使うため、
+ * 判定だけでなく文言もここに置く。片方の文言だけ古くなると、同じアプリの利用者が
+ * 違う強さの案内を受け取ることになる。
+ *
+ * **断定してよい方向が非対称であることが、この関数の要点。**
+ * 「いまは受付時間外」は告知に書かれた時刻からの帰結なので言い切ってよい。
+ * 「いまは受け取れる」は中止・早期終了がありうるので言い切ってはいけない。
+ * だから open のときだけ「告知では」と条件を付け、必ず出発前の確認を促す。
+ *
+ * 期限切れのカードでは呼ばない（期限切れの表示が排他で優先する）。
+ */
+export function serviceWindowNotice(
+  card: ActionCard,
+  now = new Date(),
+): { tone: "open" | "waiting" | "closed"; headline: string; detail: string } | null {
+  const window = serviceWindow(card, now);
+  const verify = "出発前に当日の掲載を確認してください。";
+
+  switch (window.state) {
+    case "unknown":
+      return null;
+    case "before":
+      return {
+        tone: "waiting",
+        headline: "本日の受付はまだ始まっていません",
+        detail: `${window.next.label}は${formatClock(window.next.start)}からの予定です。${verify}`,
+      };
+    case "open":
+      return {
+        tone: "open",
+        headline: "告知では受付時間内です",
+        detail:
+          `${window.current.label} ${formatClock(window.current.start)}〜${formatClock(window.current.end)}` +
+          `（${formatRemaining(window.current.end, now)}）。中止・早期終了があるため、${verify}`,
+      };
+    case "between":
+      return {
+        tone: "closed",
+        headline: "いまは受付時間外です",
+        detail:
+          `次の回は${window.next.label} ${formatClock(window.next.start)}〜${formatClock(window.next.end)}` +
+          `の予定です。${verify}`,
+      };
+    case "closed":
+      return {
+        tone: "closed",
+        headline: "本日の受付は終了しました",
+        detail: `次の予定は公式の告知で確認してください。`,
+      };
+  }
 }

@@ -11,6 +11,7 @@ import {
   categoryLabels as mobileCategoryLabels,
   isExpired as mobileIsExpired,
   municipalities as mobileAreas,
+  serviceWindow as mobileServiceWindow,
   siteCheckedAt as mobileSiteCheckedAt,
 } from "../apps/mobile/src/data/actions.ts";
 import { renderMobileData, TARGET_PATH } from "../scripts/generate-mobile-data.mjs";
@@ -149,6 +150,27 @@ test("誤認防止の表示を Web とネイティブの両方が持つ", () => 
       /\b(card|item)\.facts\b/,
       `${name}: facts を直接読まない（期限切れの安全規則を迂回する）`,
     );
+    // 受付時間帯も同じ。直に availableWindows を読むと、枠と枠の間（氷川町なら
+    // 11:00〜15:00）を「受付中」として出す実装へ簡単に戻れてしまう。
+    // 文言も正典側（serviceWindowNotice）に置く。片方の文言だけ古くなると、
+    // 同じアプリの利用者が違う強さの案内を受け取ることになる。
+    assert.match(
+      source,
+      /serviceWindowNotice\((card|item), now\)/,
+      `${name}: 受付時間帯が配られているのに描画していない（serviceWindowNotice 経由で読む）`,
+    );
+    assert.doesNotMatch(
+      source,
+      /\b(card|item)\.availableWindows\b/,
+      `${name}: availableWindows を直接読まない（受付時間外の判定を迂回する）`,
+    );
+    // 期限切れの表示は排他。受付時間の案内を期限切れカードへ出すと、
+    // 「確認できません」と「受付時間内です」が同時に並ぶ。
+    assert.match(
+      source,
+      /!expired[\s\S]{0,120}serviceWindowNotice/,
+      `${name}: 受付時間の案内が期限切れ判定の外に置かれている`,
+    );
   }
 });
 
@@ -163,5 +185,25 @@ test("ネイティブ版の期限切れ判定と接続確認時刻が Web と同
       (latest, item) => (item.checkedAt > latest ? item.checkedAt : latest),
       webCards[0].checkedAt,
     ),
+  );
+});
+
+// 受付時間外の判定が Web にしか無いと、ネイティブ利用者だけが閉まっている場所へ向かう。
+test("ネイティブ版の受付時間帯の判定が Web と同じ挙動", () => {
+  const hikawa = mobileCards.find((card) => card.id === "food-hikawa");
+  assert.ok(hikawa, "food-hikawa カードが生成物にも存在する");
+  assert.equal(
+    mobileServiceWindow(hikawa, new Date("2026-08-01T12:00:00+09:00")).state,
+    "between",
+    "期限内でも配布の間の時間は受付時間外",
+  );
+  assert.equal(
+    mobileServiceWindow(hikawa, new Date("2026-08-01T15:00:00+09:00")).state,
+    "open",
+  );
+  assert.equal(
+    mobileServiceWindow(mobileCards[0], new Date("2026-08-01T12:00:00+09:00")).state,
+    "unknown",
+    "受付時間帯を持たないカードには判定を足さない",
   );
 });

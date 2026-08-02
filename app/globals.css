@@ -640,6 +640,43 @@ footer {
   margin: 4px 0 0;
 }
 
+/*
+  受付時間の案内。期限（この情報を信じてよいか）とは別に、行けば受け取れる時間かを出す。
+
+  色の強さは「言い切れるかどうか」に合わせる。受付時間外は告知の時刻からの帰結なので
+  言い切ってよく、無駄足を止める表示なので最も強い赤系にする。受付時間内は中止・
+  早期終了がありうるので言い切れない。緑を成功色として使うと「行けば必ずもらえる」と
+  読ませてしまうため、控えめな --calm-* に留めて断定を文言側だけに任せる。
+*/
+.service-window {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 7px;
+  border: 2px solid transparent;
+}
+
+.service-window p {
+  margin: 4px 0 0;
+}
+
+.service-window--open {
+  border-color: var(--green);
+  background: var(--calm-bg);
+  color: var(--calm-ink);
+}
+
+.service-window--waiting {
+  border-color: var(--warn-border);
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+
+.service-window--closed {
+  border-color: var(--red);
+  background: var(--red-soft);
+  color: var(--danger-ink);
+}
+
 .action-card__meta .is-unverified {
   background: var(--warn-bg);
   color: var(--warn-ink);

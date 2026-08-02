@@ -23,6 +23,7 @@ import {
   isExpired,
   isLongFact,
   municipalities,
+  serviceWindowNotice,
   siteCheckedAt,
   visibleFacts,
   type ActionCategory,
@@ -51,6 +52,17 @@ export default function HomeScreen() {
   const { textScale, changeTextScale, scale } = useTextScale();
   // 行間は文字サイズに追従させる。固定のままだと「特大」で行が重なって読めない。
   const styles = useMemo(() => createStyles(palette, scale), [palette, scale]);
+  // 受付時間の案内の色。強さは「言い切れるかどうか」に合わせる（lib の serviceWindowNotice と対）。
+  const serviceWindowTone = {
+    open: styles.serviceWindowOpen,
+    waiting: styles.serviceWindowWaiting,
+    closed: styles.serviceWindowClosed,
+  } as const;
+  const serviceWindowInk = {
+    open: styles.serviceWindowInkOpen,
+    waiting: styles.serviceWindowInkWaiting,
+    closed: styles.serviceWindowInkClosed,
+  } as const;
 
   const [area, setArea] = useState<Municipality>('熊本県全域');
   const [category, setCategory] = useState<ActionCategory>('all');
@@ -372,6 +384,9 @@ export default function HomeScreen() {
           <View style={styles.cardList}>
             {filtered.map((item) => {
               const expired = isExpired(item, now);
+              // 受付時間の案内は期限内のカードにだけ出す。期限切れの表示とは排他で、
+              // 「確認できません」と「受付時間内です」を同時に並べない。
+              const windowNotice = !expired ? serviceWindowNotice(item, now) : null;
               const sourceOpen = expandedSources[item.id] === true;
               const detailOpen = expandedDetails[item.id] === true;
               return (
@@ -419,6 +434,38 @@ export default function HomeScreen() {
                     </View>
                   ) : (
                     <Text style={[styles.cardBody, { fontSize: 15 * scale }]}>{item.summary}</Text>
+                  )}
+
+                  {/*
+                    期限（この情報を信じてよいか）とは別に、受付時間（行けば受け取れるか）を出す。
+                    期限内でも、氷川町の配布なら 11:00〜15:00 は誰もいない。ここを出さないと
+                    アプリが閉まっている場所へ人を向かわせる。着いたら終わっていた、は
+                    被災者にとって心理的にも体力的にも損失が最も大きい失敗なので、手順より先に出す。
+                  */}
+                  {windowNotice && (
+                    <View
+                      accessibilityRole="summary"
+                      style={[styles.serviceWindow, serviceWindowTone[windowNotice.tone]]}
+                    >
+                      <Text
+                        style={[
+                          styles.serviceWindowTitle,
+                          serviceWindowInk[windowNotice.tone],
+                          { fontSize: 14 * scale },
+                        ]}
+                      >
+                        {windowNotice.headline}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.serviceWindowText,
+                          serviceWindowInk[windowNotice.tone],
+                          { fontSize: 13 * scale },
+                        ]}
+                      >
+                        {windowNotice.detail}
+                      </Text>
+                    </View>
                   )}
 
                   {/*
@@ -919,6 +966,28 @@ function createStyles(c: Palette, scale: number) {
     },
     unverifiedTitle: { color: c.warnInk, fontWeight: '900' },
     unverifiedText: { color: c.warnInk, lineHeight: 20 * scale, marginTop: 4 },
+    /*
+      受付時間の案内。期限（この情報を信じてよいか）とは別に、行けば受け取れる時間かを出す。
+
+      色の強さは「言い切れるかどうか」に合わせる。受付時間外は告知の時刻からの帰結なので
+      言い切ってよく、無駄足を止める表示なので最も強い赤系にする。受付時間内は中止・
+      早期終了がありうるので言い切れない。緑を成功色として使うと「行けば必ずもらえる」と
+      読ませてしまうため、控えめな calm* に留めて断定を文言側だけに任せる。
+    */
+    serviceWindow: {
+      marginTop: 12,
+      padding: 13,
+      borderRadius: 5,
+      borderWidth: 2,
+    },
+    serviceWindowOpen: { borderColor: c.calmInk, backgroundColor: c.calmBg },
+    serviceWindowWaiting: { borderColor: c.warnBorder, backgroundColor: c.warnBg },
+    serviceWindowClosed: { borderColor: c.red, backgroundColor: c.redSoft },
+    serviceWindowInkOpen: { color: c.calmInk },
+    serviceWindowInkWaiting: { color: c.warnInk },
+    serviceWindowInkClosed: { color: c.dangerInk },
+    serviceWindowTitle: { fontWeight: '900' },
+    serviceWindowText: { lineHeight: 20 * scale, marginTop: 4 },
     /*
       出典に書かれている答えそのもの（場所・時間・住所・電話番号）。畳んだ状態でも
       読める位置に出るので、手順（steps）より紙面の重みを強くし、カードを開かなくても

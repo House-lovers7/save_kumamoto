@@ -3,9 +3,22 @@ import test from "node:test";
 
 import {
   actionCards,
+  formatRemaining,
   isExpired,
+  serviceWindow,
+  serviceWindowNotice,
   visibleFacts,
 } from "../lib/disaster-data.ts";
+
+/** 時刻を日本時間の「日付」だけに落とす。テストが実行機のタイムゾーンに依存しないようにする。 */
+function jstDate(value) {
+  return new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "Asia/Tokyo",
+  }).format(new Date(value));
+}
 
 // 出典として許可するドメイン。運営主体が公的機関だと確認できたものだけを個別に列挙する。
 // ワイルドカードにしない（`*.go.jp` を許すと、内容を見ていないページを通してしまう）。
@@ -316,4 +329,153 @@ test("期限切れ判定は境界時刻で安全側へ切り替わる", () => {
   const boundary = new Date(card.expiresAt);
   assert.equal(isExpired(card, new Date(boundary.getTime() - 1000)), false);
   assert.equal(isExpired(card, boundary), true);
+});
+
+// ここから下は受付時間帯（availableWindows）。expiresAt とは別の軸で、
+// 「この情報を信じてよいか」ではなく「行けば受け取れる時間か」を持つ。
+//
+// 毎日の巡回では expiresAt と availableWindows の両方を当日分へ書き換える必要がある。
+// 片方だけ直したまま公開すると、閉まっている場所へ人を向かわせる。
+// docs/OPERATIONS.md の手順に頼らず、ここで機械的に落とす。
+
+test("受付時間帯は当日分で、最終枠の終了が有効期限と一致する", () => {
+  for (const card of actionCards) {
+    if (!card.availableWindows) continue;
+    const windows = card.availableWindows;
+    assert.ok(windows.length > 0, `${card.id}: 空の受付時間帯を置かない`);
+
+    for (const window of windows) {
+      assert.ok(window.label.trim().length > 0, `${card.id}: 枠には見出しを付ける`);
+      for (const key of ["start", "end"]) {
+        assert.equal(Number.isNaN(Date.parse(window[key])), false, `${card.id}:${key}`);
+      }
+      assert.ok(
+        Date.parse(window.start) < Date.parse(window.end),
+        `${card.id}/${window.label}: 開始は終了より前`,
+      );
+      // 前日の枠を持ち越すと、昨日の時間で人を動かすことになる。
+      assert.equal(
+        jstDate(window.start),
+        jstDate(card.checkedAt),
+        `${card.id}/${window.label}: 受付時間帯は確認した当日の日付（巡回で更新し忘れている）`,
+      );
+      assert.equal(jstDate(window.end), jstDate(card.checkedAt), `${card.id}/${window.label}`);
+    }
+
+    for (let i = 1; i < windows.length; i += 1) {
+      assert.ok(
+        Date.parse(windows[i - 1].end) <= Date.parse(windows[i].start),
+        `${card.id}: 枠は時刻順に並べ、重ねない`,
+      );
+    }
+
+    // 当日限りカードの失効は「最終受付の終了」そのもの。片方だけ巡回更新すると落ちる。
+    assert.equal(
+      windows[windows.length - 1].end,
+      card.expiresAt,
+      `${card.id}: 最終枠の終了と有効期限がずれている（巡回でどちらかを更新し忘れている）`,
+    );
+
+    // 時間を告げるカードは、必ず「出発前に確認」も一緒に告げる。
+    // 時間内の表示は告知どおりという条件付きでしかなく、中止・早期終了がありうるため。
+    assert.match(
+      card.caution,
+      /出発前/,
+      `${card.id}: 受付時間を出すカードは出発前の確認を促す`,
+    );
+  }
+});
+
+test("受付時間帯を持たないカードは判定を足さない", () => {
+  const plain = actionCards.find((card) => !card.availableWindows);
+  assert.ok(plain, "受付時間帯を持たないカードが存在する");
+  assert.deepEqual(serviceWindow(plain, new Date("2026-08-01T12:00:00+09:00")), {
+    state: "unknown",
+  });
+});
+
+// このアプリが直したかった失敗そのもの。氷川町の配布は 9:00〜11:00 と 15:00〜17:00 の2回で、
+// 間の 11:00〜15:00 は誰もいない。expiresAt（17:00）だけを見ると「有効」なので、
+// この4時間に向かった人は閉まっている場所に着く。
+test("期限内でも受付時間外の時間帯があることを判定できる", () => {
+  const card = actionCards.find((item) => item.id === "food-hikawa");
+  assert.ok(card, "food-hikawa カードが存在する");
+
+  const noon = new Date("2026-08-01T12:00:00+09:00");
+  assert.equal(isExpired(card, noon), false, "12:00 は期限内");
+  assert.equal(
+    serviceWindow(card, noon).state,
+    "between",
+    "期限内でも第1回と第2回の間は受付時間外",
+  );
+});
+
+test("受付時間帯の状態は各境界で切り替わる", () => {
+  const hikawa = actionCards.find((item) => item.id === "food-hikawa");
+  const at = (value) => serviceWindow(hikawa, new Date(value));
+
+  // 開始は含み、終了は含まない（閉まっている方へ倒す）。
+  assert.equal(at("2026-08-01T08:59:00+09:00").state, "before");
+  assert.equal(at("2026-08-01T09:00:00+09:00").state, "open");
+  assert.equal(at("2026-08-01T10:59:00+09:00").state, "open");
+  assert.equal(at("2026-08-01T11:00:00+09:00").state, "between");
+  assert.equal(at("2026-08-01T14:59:00+09:00").state, "between");
+  assert.equal(at("2026-08-01T15:00:00+09:00").state, "open");
+  assert.equal(at("2026-08-01T17:00:00+09:00").state, "closed");
+
+  // 最初の枠の前は「まだ始まっていない」、枠と枠の間は「一度閉まった」。伝えるべきことが違う。
+  assert.equal(at("2026-08-01T08:59:00+09:00").next.label, "第1回");
+  assert.equal(at("2026-08-01T12:00:00+09:00").next.label, "第2回");
+  assert.equal(at("2026-08-01T16:00:00+09:00").current.label, "第2回");
+
+  // 最終枠の終了＝失効なので、closed は通常 isExpired が先に立つ。
+  assert.equal(isExpired(hikawa, new Date("2026-08-01T17:00:00+09:00")), true);
+
+  // 枠が1つだけのカードには「間の時間」が無い。
+  const water = actionCards.find((item) => item.id === "water-station");
+  const atWater = (value) => serviceWindow(water, new Date(value));
+  assert.equal(atWater("2026-08-01T07:59:00+09:00").state, "before");
+  assert.equal(atWater("2026-08-01T08:00:00+09:00").state, "open");
+  assert.equal(atWater("2026-08-01T18:59:00+09:00").state, "open");
+  assert.equal(atWater("2026-08-01T19:00:00+09:00").state, "closed");
+});
+
+// このアプリが断定してよい方向は非対称。「閉まっている」は告知の時刻からの帰結なので
+// 言い切ってよいが、「開いている」は中止・早期終了がありうるので言い切ってはいけない。
+// 文言がこの非対称を守っていることを機械で止める。
+test("受付時間内は断定せず、受付時間外は断定する", () => {
+  const card = actionCards.find((item) => item.id === "food-hikawa");
+
+  const open = serviceWindowNotice(card, new Date("2026-08-01T15:30:00+09:00"));
+  assert.equal(open.tone, "open");
+  assert.match(open.headline, /^告知では/, "受付時間内を言い切らない");
+  assert.match(open.detail, /第2回 15:00〜17:00/, "告知の時刻をそのまま出す");
+  assert.match(open.detail, /あと約1時間30分/, "終了までの残りを出す");
+  assert.match(open.detail, /中止・早期終了/, "保証しないことを明示する");
+  assert.match(open.detail, /出発前に当日の掲載を確認/, "出発前の確認を促す");
+
+  const between = serviceWindowNotice(card, new Date("2026-08-01T12:00:00+09:00"));
+  assert.equal(between.tone, "closed");
+  assert.equal(between.headline, "いまは受付時間外です", "受付時間外は言い切る");
+  assert.match(between.detail, /次の回は第2回 15:00〜17:00の予定です/);
+
+  const before = serviceWindowNotice(card, new Date("2026-08-01T08:00:00+09:00"));
+  assert.equal(before.tone, "waiting");
+  assert.match(before.detail, /第1回は9:00からの予定です/);
+
+  // 受付時間帯を持たないカードには、この案内を一切足さない。
+  const plain = actionCards.find((item) => !item.availableWindows);
+  assert.equal(serviceWindowNotice(plain, new Date("2026-08-01T12:00:00+09:00")), null);
+});
+
+// 「17:00まで」だけでは、移動時間を足すと間に合わないことに気づけない。
+// 切り上げると「あと1時間」と言って59分しかない状態を作るので、必ず切り捨てる。
+test("残り時間は切り捨てで出す", () => {
+  const now = new Date("2026-08-01T15:00:00+09:00");
+  assert.equal(formatRemaining("2026-08-01T17:00:00+09:00", now), "あと約2時間");
+  assert.equal(formatRemaining("2026-08-01T16:30:00+09:00", now), "あと約1時間30分");
+  assert.equal(formatRemaining("2026-08-01T15:45:00+09:00", now), "あと約45分");
+  assert.equal(formatRemaining("2026-08-01T15:59:59+09:00", now), "あと約59分");
+  assert.equal(formatRemaining("2026-08-01T15:00:30+09:00", now), "まもなく終了");
+  assert.equal(formatRemaining("2026-08-01T14:00:00+09:00", now), "まもなく終了");
 });
