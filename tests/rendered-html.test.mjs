@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+import { municipalities } from "../lib/disaster-data.ts";
+
 async function render() {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
@@ -81,4 +83,47 @@ test("PWAとプライバシー境界を静的に備える", async () => {
   assert.match(data, /expiresAt/);
   assert.match(data, /isExpired/);
   assert.doesNotMatch(client, /geolocation|getCurrentPosition|analytics/i);
+});
+
+// 地域カバレッジ図は、件数だけを並べると「多い＝安全」と読まれる表示。
+// 何を数えているのかの注記は、JS が動く前の初期HTMLに出ていなければ意味がない。
+test("地域カバレッジ図は、注記とセットで初期HTMLに出る", async () => {
+  const response = await render();
+  const html = await response.text();
+
+  assert.match(html, /class="area-map"/);
+  assert.match(html, /位置関係は実際の地理と異なります。/);
+  assert.match(
+    html,
+    /件数は公式ページで確認できた案内の数です。現地が今使えるかどうかではありません。/,
+  );
+  // 「名指しの案内なし」を「この地域には何も無い」と読ませないための1行。
+  // 全部期限切れのときは件数を出さず、期限切れだと言い切る。
+  assert.match(
+    html,
+    /どの地域でも使える熊本県全域の案内が\d+件あります。|どの地域でも使える熊本県全域の案内は、いまはすべて期限切れです。/,
+  );
+
+  // 市町村がひとつでも図から欠けると、その地域の利用者は自分の欄が無いことに気づけない。
+  for (const area of municipalities) {
+    assert.ok(html.includes(area), `${area} のタイルが初期HTMLに無い`);
+  }
+});
+
+// 面（地域）で塗る図を、点（ピン）や現在地の地図と読ませない。
+// GPSを持たず座標も持たないので、近さや現在地を語れる根拠がそもそも無い。
+// 検査は図の内側だけに限る（資源エネルギー庁の外部地図への導線など、
+// 出典側の正当な「地図で近くの給油所」を巻き込まないため）。
+test("地域カバレッジ図の中で、現在地や近さを語らない", async () => {
+  const response = await render();
+  const html = await response.text();
+
+  const start = html.indexOf('class="area-map"');
+  const end = html.indexOf('class="controls"');
+  assert.ok(start >= 0 && end > start, "area-map の区間を取り出せない");
+  const section = html.slice(start, end);
+
+  for (const word of ["現在地", "近く", "最寄り", "ピン", "あなたの位置", "km"]) {
+    assert.ok(!section.includes(word), `地域カバレッジ図に「${word}」が出ている`);
+  }
 });

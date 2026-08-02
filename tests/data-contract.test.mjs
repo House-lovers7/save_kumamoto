@@ -3,8 +3,10 @@ import test from "node:test";
 
 import {
   actionCards,
+  areaCoverage,
   formatRemaining,
   isExpired,
+  municipalities,
   serviceWindow,
   serviceWindowNotice,
   visibleFacts,
@@ -478,4 +480,102 @@ test("残り時間は切り捨てで出す", () => {
   assert.equal(formatRemaining("2026-08-01T15:59:59+09:00", now), "あと約59分");
   assert.equal(formatRemaining("2026-08-01T15:00:30+09:00", now), "まもなく終了");
   assert.equal(formatRemaining("2026-08-01T14:00:00+09:00", now), "まもなく終了");
+});
+
+// 地域ごとの件数は、絞り込みの規則とは別の数え方をする。
+// 絞り込み（home-client.tsx の filtered）は「県全域カードはどの市町村でも出す」という
+// 緩い規則だが、その規則で数えると全タイルに県全域の案内が乗り、固有の案内が1枚も無い
+// 地域まで手厚く見える。カバレッジ図の目的は、欠けている地域を欠けたまま見せることにある。
+test("地域ごとの件数は、その市町村を名指ししたカードだけを数える", () => {
+  const now = new Date("2026-08-01T12:00:00+09:00");
+  const rows = areaCoverage(now);
+
+  // 全市町村が必ず出る。件数0の地域をタイルごと消すと「無い」ことが伝わらない。
+  assert.deepEqual(
+    rows.map((row) => row.area),
+    [...municipalities],
+    "市町村がひとつでも図から欠けている",
+  );
+
+  for (const row of rows) {
+    const named = actionCards.filter((card) => card.areas.includes(row.area));
+    assert.equal(row.localCount, named.length, `${row.area}: localCount`);
+    assert.equal(
+      row.expiredCount,
+      named.filter((card) => isExpired(card, now)).length,
+      `${row.area}: expiredCount`,
+    );
+    assert.equal(
+      row.unverifiedCount,
+      named.filter((card) => card.sourceStatus === "unavailable").length,
+      `${row.area}: unverifiedCount`,
+    );
+  }
+});
+
+test("県全域の案内を各市町村の件数へ足し込まない", () => {
+  const rows = areaCoverage(new Date("2026-08-01T12:00:00+09:00"));
+  const wide = actionCards.filter((card) => card.areas.includes("熊本県全域"));
+
+  const all = rows.find((row) => row.area === "熊本県全域");
+  assert.equal(all.localCount, wide.length, "県全域タイルは県全域カードの数を出す");
+  assert.equal(all.wideCount, 0, "県全域タイルで自分自身を二重に数えない");
+
+  for (const row of rows.filter((item) => item.area !== "熊本県全域")) {
+    assert.equal(row.wideCount, wide.length, `${row.area}: 県全域の数は別枠で持つ`);
+    // 県全域だけを対象にしたカードが、市町村の localCount に混ざっていないこと。
+    const named = actionCards.filter((card) => card.areas.includes(row.area));
+    for (const card of named) {
+      assert.ok(
+        card.areas.includes(row.area),
+        `${row.area}: ${card.id} を名指しされていないのに数えている`,
+      );
+    }
+  }
+});
+
+// 0件を「まだ数えていない」ではなく「名指しの案内が無い」と出すための調子。
+// 特定の市町村が0件であることは巡回で変わるので固定しない。規則だけを固定する。
+test("案内が0件の地域だけが none になる", () => {
+  for (const row of areaCoverage(new Date("2026-08-01T12:00:00+09:00"))) {
+    assert.equal(
+      row.tone === "none",
+      row.localCount === 0,
+      `${row.area}: 0件と none が一致しない`,
+    );
+  }
+});
+
+// 時刻を無視する実装（件数を定数として持つなど）を素通しさせない。
+// 片方の時刻だけ見て通ると、期限切れが件数に反映されない退行を検出できない。
+test("時計を進めると期限切れ件数と調子が実際に変わる", () => {
+  const earliest = actionCards.reduce(
+    (min, card) => (card.expiresAt < min ? card.expiresAt : min),
+    actionCards[0].expiresAt,
+  );
+  const latest = actionCards.reduce(
+    (max, card) => (card.expiresAt > max ? card.expiresAt : max),
+    actionCards[0].expiresAt,
+  );
+
+  const before = areaCoverage(new Date(new Date(earliest).getTime() - 1000));
+  const after = areaCoverage(new Date(new Date(latest).getTime() + 1000));
+
+  for (const row of before) {
+    assert.equal(row.expiredCount, 0, `${row.area}: 最初の失効前に期限切れがある`);
+    assert.notEqual(row.tone, "expired", `${row.area}: 最初の失効前に expired へ倒れている`);
+  }
+  for (const row of after) {
+    assert.equal(row.expiredCount, row.localCount, `${row.area}: 全失効後に取り残しがある`);
+    assert.equal(
+      row.tone,
+      row.localCount === 0 ? "none" : "expired",
+      `${row.area}: 全失効後の調子`,
+    );
+  }
+  assert.notDeepEqual(
+    before.map((row) => row.tone),
+    after.map((row) => row.tone),
+    "時計を進めても調子が1つも変わらない（時刻を見ていない）",
+  );
 });

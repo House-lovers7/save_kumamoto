@@ -52,7 +52,10 @@ test("停止中は個別案内と、行き先を失う操作子が消える", as
   // 押しても何も起きない操作子を残さない（行き先の #actions ごと消えているため）
   assert.equal(count(html, /class="need-grid"/g), 0);
   assert.equal(count(html, /class="controls"/g), 0);
+  assert.equal(count(html, /class="area-map"/g), 0);
   assert.equal(count(html, /skip-link/g), 0);
+  // 縮退中に案内の件数だけが残ると、止めているのに「N件ある」と読ませる。
+  assert.equal(count(html, /位置関係は実際の地理と異なります/g), 0);
 });
 
 test("停止中でも119・110は残る", async () => {
