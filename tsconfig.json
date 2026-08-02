@@ -6,6 +6,11 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
+    // lib 内の .ts 同士を `./foo.ts` の形で import できるようにする。
+    // Node の型ストリップ実行（node --test が lib/*.ts を直接読む）は拡張子付きしか
+    // 解決できず、tsc はこの設定が無いとその拡張子を拒否する。噛み合わせるための1行で、
+    // noEmit なので出力物は変わらない。app/ 側の `@/lib/...`（拡張子なし）は従来どおり。
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
