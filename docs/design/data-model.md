@@ -159,14 +159,30 @@ erDiagram
 
 判定と文言はどちらも正典（`serviceWindow()` / `serviceWindowNotice()`）に置き、Web とネイティブが同じものを使う。文言は断定の方向が非対称で、受付時間外は言い切り、受付時間内は「告知では」を付けて中止・早期終了の可能性を必ず添える。
 
+### 地域ごとの集計（`areaCoverage()`）
+
+`ActionCard` に**フィールドを1つも足していない**。既存の `areas` / `expiresAt` / `sourceStatus` から数え直すだけの導出関数で、緯度経度は持たない（決定は `docs/adr/0002-area-map-uses-municipality-tiles-not-pins.md`）。
+
+| 返す値 | 定義 |
+|---|---|
+| `localCount` | `areas` にその市町村を**名指ししている**カードの数。県全域カードは含めない |
+| `expiredCount` | `localCount` のうち `isExpired()` が真の数 |
+| `unverifiedCount` | `localCount` のうち `sourceStatus === "unavailable"` の数 |
+| `wideCount` | `areas` に「熊本県全域」を含むカードの数。県全域タイル自身では `0`（自分の `localCount` と同じものなので二重計上しない） |
+| `tone` | `localCount === 0` → `none` ／ 全件失効 → `expired` ／ 期限切れか未確認を含む → `partial` ／ その他 → `covered` |
+
+**絞り込みとは数え方が違う。** 絞り込み（`app/home-client.tsx` の `filtered`）は「県全域カードはどの市町村でも出す」という緩い規則を使うが、その規則で数えると全タイルに県全域の案内が乗り、固有の案内が1枚も無い地域まで手厚く見える。この関数の目的は、欠けている地域を欠けたまま見せることにある。
+
+関数は `lib/disaster-data.ts` の**末尾**に置いている。`scripts/generate-mobile-data.mjs` の tail 切り出しがマーカーからEOFまでを取るのでネイティブ側へ複製され、かつ既存の行番号参照を1つもずらさない。
+
 ## 端末に保存されるもの
 
-サーバー側に利用者データは無い。端末側は次のみ（`app/home-client.tsx:50-62, 147-155`）。
+サーバー側に利用者データは無い。端末側は次のみ（`app/home-client.tsx:51-63, 158-166`）。
 
 | 保存先 | キー | 内容 | 個人を識別するか |
 |---|---|---|---|
 | `localStorage`（Web） | `relief-area` | 選んだ市町村名 | しない |
 | `localStorage`（Web） | `relief-text-scale` | 文字サイズ（`standard`/`large`/`xlarge`） | しない |
-| `localStorage`（Web、旧キー） | `relief-large-text` | 読み取り時に `relief-text-scale` へ移行（`app/home-client.tsx:51-62`） | しない |
+| `localStorage`（Web、旧キー） | `relief-large-text` | 読み取り時に `relief-text-scale` へ移行（`app/home-client.tsx:52-63`） | しない |
 | Cache Storage（Web） | `kumamoto-action-v3` | HTMLと静的アセット（`public/sw.js:1`） | しない |
 | `AsyncStorage`（モバイル） | `AREA_KEY = "relief-area"`（`apps/mobile/src/theme.ts:104`） | 選んだ市町村名（`apps/mobile/src/app/index.tsx:66-71, 135-138`） | しない |

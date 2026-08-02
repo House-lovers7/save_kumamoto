@@ -42,7 +42,7 @@
 
 ## 外部への発信
 
-**実行時に外部へ出ていく通信は無い。** 公式サイトへのリンクは `<a href target="_blank" rel="noreferrer">` で、利用者のブラウザが直接開く（`app/home-client.tsx:491-501`）。アプリのサーバー（Worker）が公式サイトを取りに行くことはない。
+**実行時に外部へ出ていく通信は無い。** 公式サイトへのリンクは `<a href target="_blank" rel="noreferrer">` で、利用者のブラウザが直接開く（`app/home-client.tsx:566-576`）。アプリのサーバー（Worker）が公式サイトを取りに行くことはない。
 
 情報の取得は、運営者が巡回時に手で行う（`docs/OPERATIONS.md` 第5章）。唯一、公式サイトへ実際にHTTPリクエストするコードは `scripts/qa/patrol-diff.mjs` で、これは開発・CI環境からの検証用スクリプトであり、公開されているアプリ本体（Cloudflare Workers上で動くコード）には含まれない。詳細は `architecture.md`「データ更新フロー」を参照。
 
