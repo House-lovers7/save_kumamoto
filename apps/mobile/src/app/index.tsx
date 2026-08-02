@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   actionCards,
+  areaCoverage,
   categoryLabels,
   formatRelativeTime,
   formatTimestamp,
@@ -119,6 +120,15 @@ export default function HomeScreen() {
     }
     return counts;
   }, [area]);
+
+  // 地域ごとの案内の数。Web と同じ areaCoverage() を通すので、同じアプリの利用者が
+  // 端末によって違う件数を見ることがない。
+  const coverage = useMemo(() => areaCoverage(now), [now]);
+  // 「どの地域でも使える」と書く以上、期限切れを数に含めてはいけない。
+  const wideLiveCount = useMemo(() => {
+    const wide = coverage.find((entry) => entry.area === '熊本県全域');
+    return wide ? wide.localCount - wide.expiredCount : 0;
+  }, [coverage]);
 
   // 保存情報が古くなったら見た目も変える。全部期限切れなのに緑の信号を出さない。
   const freshness = useMemo(() => {
@@ -314,29 +324,74 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        <Text style={[styles.sectionLabel, { fontSize: 12 * scale }]}>市町村</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chips}>
-          {municipalities.map((item) => (
+        {/*
+          地域から選ぶ図。地図ライブラリも座標も外部タイルも使わない。施設名から緯度経度を
+          引くことは出典に無い情報を推測で作ることであり、地図上のピンは「そこが今使える」と
+          読ませて稼働状況の判定を肩代わりしてしまう。面（市町村）なら areas だけで描ける
+          （docs/adr/0002）。横スクロールのチップから折り返しの一覧へ変えたのは、
+          7つを一度に見渡せないと「どこが欠けているか」が分からないため。
+        */}
+        <Text style={[styles.sectionLabel, { fontSize: 12 * scale }]}>地域から選ぶ</Text>
+        <Text style={[styles.areaCaveat, { fontSize: 12 * scale }]}>
+          位置関係は実際の地理と異なります。
+        </Text>
+        <Text style={[styles.areaCaveat, { fontSize: 12 * scale }]}>
+          件数は公式ページで確認できた案内の数です。現地が今使えるかどうかではありません。
+        </Text>
+        <View style={styles.areaGrid}>
+          {coverage.map((entry) => (
             <Pressable
-              key={item}
+              key={entry.area}
               accessibilityRole="button"
-              accessibilityState={{ selected: area === item }}
-              onPress={() => selectArea(item)}
-              style={[styles.chip, area === item && styles.chipActive]}>
+              accessibilityState={{ selected: area === entry.area }}
+              onPress={() => selectArea(entry.area)}
+              style={[
+                styles.areaTile,
+                entry.area === '熊本県全域' && styles.areaTileAll,
+                entry.tone === 'partial' && styles.areaTilePartial,
+                entry.tone === 'expired' && styles.areaTileExpired,
+                entry.tone === 'none' && styles.areaTileNone,
+                area === entry.area && styles.areaTileActive,
+              ]}>
               <Text
                 style={[
-                  styles.chipText,
-                  area === item && styles.chipTextActive,
-                  { fontSize: 13 * scale },
+                  styles.areaTileName,
+                  area === entry.area && styles.areaTileNameActive,
+                  { fontSize: 14 * scale },
                 ]}>
-                {item}
+                {entry.area}
               </Text>
+              <Text style={[styles.areaTileCount, { fontSize: 11 * scale }]}>
+                {entry.localCount > 0
+                  ? `案内 ${entry.localCount}件`
+                  : 'この地域を名指しした案内はありません'}
+              </Text>
+              {/*
+                欠けている数は、色ではなく文字で出す。色だけで区別すると、色を区別しにくい
+                利用者と、屋外の強い光の下で「一部が期限切れ」であることが消える。
+              */}
+              {(entry.expiredCount > 0 || entry.unverifiedCount > 0) && (
+                <Text style={[styles.areaTileGap, { fontSize: 11 * scale }]}>
+                  {[
+                    entry.expiredCount > 0 ? `期限切れ ${entry.expiredCount}件` : '',
+                    entry.unverifiedCount > 0 ? `未確認 ${entry.unverifiedCount}件` : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' / ')}
+                </Text>
+              )}
             </Pressable>
           ))}
-        </ScrollView>
+        </View>
+        {/*
+          「名指しの案内なし」を「この地域には何も無い」と読ませないための1行。
+          タイルごとに繰り返すと7回同じ文が並ぶので、図の下に1度だけ置く。
+        */}
+        <Text style={[styles.areaWideNote, { fontSize: 12 * scale }]}>
+          {wideLiveCount > 0
+            ? `このほかに、どの地域でも使える熊本県全域の案内が${wideLiveCount}件あります。`
+            : 'どの地域でも使える熊本県全域の案内は、いまはすべて期限切れです。'}
+        </Text>
 
         <Text style={[styles.sectionLabel, { fontSize: 12 * scale }]}>キーワード</Text>
         <View style={styles.searchWrap}>
@@ -873,6 +928,55 @@ function createStyles(c: Palette, scale: number) {
     needLabelActive: { color: c.accentInk },
     needCount: { color: c.muted, fontFamily: 'monospace' },
     needCountActive: { color: c.accentInk },
+    areaCaveat: {
+      color: c.muted,
+      marginHorizontal: 18,
+      marginBottom: 4,
+      lineHeight: 18 * scale,
+    },
+    areaGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+      paddingHorizontal: 16,
+      paddingTop: 8,
+    },
+    areaTile: {
+      flexGrow: 1,
+      flexBasis: '44%',
+      // needCell と同じ作り方（実描画で 48dp を確実に満たすことが確認済みの寸法）。
+      minHeight: 72,
+      justifyContent: 'center',
+      gap: 4,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: c.line,
+      backgroundColor: c.surface,
+    },
+    // 熊本県全域はどこにいても使う入口なので、最上段に全幅で置く。
+    areaTileAll: { flexBasis: '100%' },
+    areaTileActive: { borderColor: c.navy, backgroundColor: c.chipBg },
+    /*
+      調子は「欠けている度合い」だけを表す。良い状態に色を付けない。
+      期限内であることは公式ページの更新を確認できたという意味でしかなく、
+      現地が使えるという意味ではないため、成功を示す緑を置かない。
+    */
+    areaTilePartial: { borderLeftWidth: 4, borderLeftColor: c.warnBorder },
+    areaTileExpired: { borderLeftWidth: 4, borderLeftColor: c.red, backgroundColor: c.chipBg },
+    areaTileNone: { borderStyle: 'dashed' },
+    areaTileName: { color: c.ink, fontWeight: '800' },
+    areaTileNameActive: { color: c.accentInk },
+    areaTileCount: { color: c.muted, fontWeight: '700' },
+    areaTileGap: { color: c.warnInk, fontWeight: '700' },
+    areaWideNote: {
+      color: c.bodyText,
+      marginHorizontal: 18,
+      marginTop: 10,
+      marginBottom: 20,
+      lineHeight: 18 * scale,
+    },
     chips: { paddingHorizontal: 16, paddingBottom: 20, gap: 8 },
     chip: {
       // 横スクロールの中では minHeight だけだと実描画が 44dp を割る（実測 34.7dp）。
