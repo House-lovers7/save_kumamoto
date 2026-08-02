@@ -35,7 +35,7 @@ npm run dev              # ポート指定は npm run dev -- --port 3002
 
 ```bash
 npm run lint             # tsc --noEmit
-npm test                 # 本番ビルド + node --test（47件）
+npm test                 # 本番ビルド + node --test（60件・2026-08-02 実測）
 npm audit
 ```
 

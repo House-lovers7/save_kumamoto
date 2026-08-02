@@ -417,7 +417,7 @@ Service Worker（`public/sw.js`、キャッシュ名 `kumamoto-action-v2`）。
 
 ```bash
 npm run lint             # tsc --noEmit
-npm test                 # build + node --test（25件）
+npm test                 # build + node --test（60件・2026-08-02 実測）
 npm run gen:mobile-data  # 正典→ネイティブ生成（差分ゼロが正常）
 npm run build && npm run start -- --port 3123
 node scripts/qa/hydration-check.mjs 9333 http://localhost:3123/    # 停止が hydration 後も効くか
