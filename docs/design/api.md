@@ -52,9 +52,9 @@
 |---|---|---|---|---|
 | `EMERGENCY_MODE` | 文字列。`"true"` のみ真、それ以外（未設定含む）はすべて偽 | 未設定 | 緊急縮退モード。個別カード・絞り込み操作子を非表示にし、119/110と公的情報を優先する | `lib/emergency-mode.ts:17-21` |
 
-設定は `npx wrangler secret put EMERGENCY_MODE`（本番）、ローカルは `.dev.vars` または `EMERGENCY_MODE=true npm run start`（`README.md:140-157`）。
+設定は `npx wrangler secret put EMERGENCY_MODE`（本番）、ローカルは `.dev.vars` または `EMERGENCY_MODE=true npm run start`（`README.md`「開発の勘所」）。
 
-**変数名に `NEXT_PUBLIC_` を付けてはいけない。** vinextはビルドプロセスの `NEXT_PUBLIC_*` をrsc/ssrを含む全環境へdefineするため、値がサーバー側に定数として焼き付き、以後どの環境変数を変えても停止できなくなる（`README.md:161-164`, `lib/emergency-mode.ts:9-11`）。
+**変数名に `NEXT_PUBLIC_` を付けてはいけない。** vinextはビルドプロセスの `NEXT_PUBLIC_*` をrsc/ssrを含む全環境へdefineするため、値がサーバー側に定数として焼き付き、以後どの環境変数を変えても停止できなくなる（`README.md`「開発の勘所」, `lib/emergency-mode.ts:9-11`）。
 
 Workersのbindings（vars/secrets）が `process.env` へ流し込まれる条件は `compatibility_date >= 2025-04-01` かつ `compatibility_flags: ["nodejs_compat"]` の両方（`vite.config.ts:21-22`。この前提を落とすと停止が黙って効かなくなる理由は同ファイル `17-20` のコメント）。`tests/emergency-mode.test.mjs:139-149` がこの前提条件をビルド成果物（`dist/server/wrangler.json`）から直接検査して固定している。
 

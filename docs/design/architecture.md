@@ -56,7 +56,7 @@ flowchart TB
 
 - Cloudflare Workers上で `worker/index.ts` が受け口になり、`/_vinext/image` は画像最適化ハンドラへ、それ以外は vinext の `app-router-entry` ハンドラ（SSR/RSC）へ委譲する。どちらの応答にもセキュリティヘッダーを付け直してから返す（`worker/index.ts:94-112`）。
 - 実行時に外部（公式サイト）へ取りに行く処理はアプリ本体のコードには無い。情報は運営者が巡回時に手で `lib/disaster-data.ts` へ書く（`docs/DESIGN.md:111-112` の記述をコードでも確認: `lib/disaster-data.ts` にはfetch呼び出しが無い）。`scripts/qa/patrol-diff.mjs` だけが公式URLへ実際にHTTPリクエストする（後述「データ更新フロー」）。
-- ネイティブ（Expo）は `apps/mobile/src/data/actions.ts` を起動時にアプリへ同梱したデータとして読むだけで、実行時通信はゼロ（`README.md:169-181`）。EMERGENCY_MODE の停止経路もネイティブには届かない（`README.md:166`, `docs/DESIGN.md:173-175`）。
+- ネイティブ（Expo）は `apps/mobile/src/data/actions.ts` を起動時にアプリへ同梱したデータとして読むだけで、実行時通信はゼロ（`README.md`「これは何か」）。EMERGENCY_MODE の停止経路もネイティブには届かない（`docs/RELEASE_AUDIT.md`「停止の到達範囲」, `docs/DESIGN.md:173-175`）。
 - インフラとして持たないもの: KV / D1 / R2 / Durable Objects / キュー / **Workers の cron trigger** / DB / 認証基盤 / 外部APIクライアント / アクセス解析SaaS（`docs/DESIGN.md:384-392`。根拠は本書 `data-model.md` の「データベースは無い」章で裏取り）。後述する巡回パトロールの定期実行は GitHub Actions の `schedule` であり、公開アプリ（Workers）側の定期実行ではない。
 
 ## 2. リクエスト処理フロー
@@ -144,7 +144,7 @@ flowchart TB
     P4 -.-> D1
 ```
 
-**正典は1つ。** `lib/disaster-data.ts` だけが情報の原本で、ネイティブ用 `apps/mobile/src/data/actions.ts` は `npm run gen:mobile-data`（実体: `scripts/generate-mobile-data.mjs`）の生成物（`README.md:115-120`）。生成スクリプトはソーステキストを `export const municipalities` と `export const siteCheckedAt` の2つのマーカー文字列で切り出して複製し、`actionCards` 本体は `JSON.stringify` で埋め込む（`scripts/generate-mobile-data.mjs:18-19, 46-63`）。マーカー文字列が消えたり並びが変わると生成が例外で止まる（`scripts/generate-mobile-data.mjs:23-29`）。
+**正典は1つ。** `lib/disaster-data.ts` だけが情報の原本で、ネイティブ用 `apps/mobile/src/data/actions.ts` は `npm run gen:mobile-data`（実体: `scripts/generate-mobile-data.mjs`）の生成物（`README.md`「開発の勘所」）。生成スクリプトはソーステキストを `export const municipalities` と `export const siteCheckedAt` の2つのマーカー文字列で切り出して複製し、`actionCards` 本体は `JSON.stringify` で埋め込む（`scripts/generate-mobile-data.mjs:18-19, 46-63`）。マーカー文字列が消えたり並びが変わると生成が例外で止まる（`scripts/generate-mobile-data.mjs:23-29`）。
 
 **巡回パトロールはデータを自動更新しない。** `scripts/qa/patrol-diff.mjs` は `lib/disaster-data.ts` の `sourceLandmark` / `facts[].citedAs` / `facts[].items` が出典ページの本文に実在するかをテキスト正規化のうえで照合するだけで（`scripts/qa/patrol-diff.mjs:28-38, 116-142`）、差分が見つかっても `lib/disaster-data.ts` を書き換えず、GitHub Issueで人間に通知するだけ（`.github/workflows/patrol.yml:5-7` のコメントで明示）。
 

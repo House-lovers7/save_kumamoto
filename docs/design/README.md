@@ -15,8 +15,9 @@
 
 ## 関連する既存ドキュメント（このディレクトリの外）
 
-- `README.md`（リポジトリ直下） — 実行方法・検証コマンド・公開手順・現在の検証結果・公開前に残る課題
+- `README.md`（リポジトリ直下） — オンボーディングの入口（コンセプト・実行方法・画面と操作・ディレクトリ構成）
 - `docs/DESIGN.md` — 本ディレクトリの前身にあたる、2026-07-31時点の単一ファイル設計書
 - `docs/OPERATIONS.md` — 訂正・停止の運用手順（ランブック）
-- `docs/RELEASE_AUDIT.md` — 公開判定の監査記録
+- `docs/RELEASE_AUDIT.md` — 公開判定・検証実測ログ・残課題・リリース手順
+- `docs/FIXES.md` — 修正した不具合の記録（症状 → 原因 → 対処）
 - `docs/adr/` — Architecture Decision Record

@@ -142,7 +142,7 @@ stateDiagram-v2
 
 W-1とほぼ同一の構成をExpo Router + React Nativeで再実装している（`apps/mobile/src/app/index.tsx`）。緊急ストリップ→ブランド→文字サイズ→鮮度バー→「いま困っていることは？」見出し→困りごとグリッド→市町村チップ→キーワード検索→カテゴリチップ→アクションカード一覧→オフライン行動カードへの導線パネル→安全パネル→フッター、の順（`apps/mobile/src/app/index.tsx:168-698`）。
 
-**Web/モバイルのパリティ状況（現行コードで確認）**: `docs/DESIGN.md`（2026-07-31時点）は「`verifyPoints` / `irreversibleOrder` / `unverified` はネイティブへ生成物として配られているが、N-1の画面にはまだ描画していない」と記録しているが、**現在の `apps/mobile/src/app/index.tsx` はこの3つをすべて描画している**（`unverified`: 429-438行、`verifyPoints`: 550-568行、`irreversibleOrder`: 571-587行）。緊急停止フラグ（`EMERGENCY_MODE`）に相当する経路はモバイルには存在せず、`apps/mobile/src` 配下に該当する参照は無い（`README.md:166` の「ネイティブには届かない」という記述と一致）。
+**Web/モバイルのパリティ状況（現行コードで確認）**: `docs/DESIGN.md`（2026-07-31時点）は「`verifyPoints` / `irreversibleOrder` / `unverified` はネイティブへ生成物として配られているが、N-1の画面にはまだ描画していない」と記録しているが、**現在の `apps/mobile/src/app/index.tsx` はこの3つをすべて描画している**（`unverified`: 429-438行、`verifyPoints`: 550-568行、`irreversibleOrder`: 571-587行）。緊急停止フラグ（`EMERGENCY_MODE`）に相当する経路はモバイルには存在せず、`apps/mobile/src` 配下に該当する参照は無い（`docs/RELEASE_AUDIT.md`「停止の到達範囲」の「一切届かない」という記述と一致）。
 
 モバイル独自の開閉状態として `expandedSources` / `expandedDetails` / `expandedFacts` を持つ（`apps/mobile/src/app/index.tsx:58-62`）。Webの `<details>` に相当する挙動をReact Nativeでは自前のstateで実装している。
 

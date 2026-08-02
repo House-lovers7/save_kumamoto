@@ -39,7 +39,8 @@ save_kumamoto/
 │   ├── work-orders/             外部レビュー起因の作業指示書
 │   ├── DESIGN.md                本ディレクトリの前身にあたる単一ファイル設計書（2026-07-31時点）
 │   ├── OPERATIONS.md            訂正・停止の運用手順（ランブック）
-│   └── RELEASE_AUDIT.md         公開判定の監査記録
+│   ├── RELEASE_AUDIT.md         公開判定・検証実測ログ・残課題・リリース手順
+│   └── FIXES.md                 修正した不具合の記録（症状 → 原因 → 対処）
 ├── drizzle/
 │   └── meta/                    空ディレクトリ（後述「用途調査」参照）
 ├── examples/
@@ -84,7 +85,7 @@ save_kumamoto/
 ├── vite.config.ts                  Vite/Cloudflare Workersビルド設定。EMERGENCY_MODE前提条件のcompatibility_date等をここで固定
 ├── postcss.config.mjs              Tailwind CSS 4 (@tailwindcss/postcss) 設定
 ├── tsconfig.json / tsconfig.web.json  TypeScript設定（サーバー向け・Web向け）
-├── README.md                       実行方法・検証コマンド・公開手順・現在の検証結果
+├── README.md                       オンボーディングの入口（コンセプト・実行方法・画面と操作・構成）
 ├── HANDOFF.md                      開発セッション間の引き継ぎメモ（生きた作業ログ、本アプリの仕様書ではない）
 └── handoff-kumamon-2026-08-01.md   くまモン特例申請作業の引き継ぎメモ（同上）
 ```
