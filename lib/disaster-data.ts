@@ -1204,3 +1204,61 @@ export function serviceWindowNotice(
       };
   }
 }
+
+export type AreaCoverage = {
+  area: (typeof municipalities)[number];
+  /** その市町村を名指ししているカードの数。県全域カードは含めない。 */
+  localCount: number;
+  /** localCount のうち期限切れの数。 */
+  expiredCount: number;
+  /** localCount のうち出典で確認できていない（sourceStatus:"unavailable"）数。 */
+  unverifiedCount: number;
+  /** そこにいても使える県全域カードの数。県全域タイル自身では 0（自分の localCount と同じものになるため）。 */
+  wideCount: number;
+  /** 表示の調子。緑を成功色に使わないため、良い状態を表す名前は置かない。 */
+  tone: "covered" | "partial" | "expired" | "none";
+};
+
+/**
+ * 市町村ごとに「公式ページで確認できた案内が何件あるか」を数えたもの。
+ * Web とネイティブが同じ数字を出すためにここへ置く。
+ *
+ * **これはカバレッジであって、現地の稼働状況ではない。**
+ * 数えているのは「このアプリが出典を確認できた案内の枚数」で、給水車が今いるか、
+ * 配布が続いているかは含まない（`docs/design/concept.md` の「引き受けない範囲」）。
+ * 画面側は必ずその旨を添えて出す。件数だけを地図状に並べると「多い＝安全」と読まれる。
+ *
+ * 絞り込み（`app/home-client.tsx` の filtered）は「県全域カードはどの市町村でも出す」
+ * という緩い規則を使うが、ここでは **その市町村を名指ししているカードだけ** を数える。
+ * 緩い規則で数えると全タイルに県全域の5件が乗り、どの市町村も同じくらい手厚く見える。
+ * 宇土市のように固有の案内が1枚も無い地域を 0 と出すことが、この関数の目的である。
+ * 代わりに「そこでも使える県全域の案内」を `wideCount` として別枠で返し、
+ * 0 件を「この地域には何も無い」と読ませないようにする。
+ */
+export function areaCoverage(now = new Date()): AreaCoverage[] {
+  const wideCards = actionCards.filter((card) => card.areas.includes("熊本県全域"));
+
+  return municipalities.map((area) => {
+    const local = actionCards.filter((card) => card.areas.includes(area));
+    const expiredCount = local.filter((card) => isExpired(card, now)).length;
+    const unverifiedCount = local.filter((card) => card.sourceStatus === "unavailable").length;
+
+    // 期限切れと未確認は別の欠け方なので、片方だけで covered へ倒さない。
+    // 「全部期限切れ」は「一部だけ期限切れ」より重いので、先に判定する。
+    let tone: AreaCoverage["tone"];
+    if (local.length === 0) tone = "none";
+    else if (expiredCount === local.length) tone = "expired";
+    else if (expiredCount > 0 || unverifiedCount > 0) tone = "partial";
+    else tone = "covered";
+
+    return {
+      area,
+      localCount: local.length,
+      expiredCount,
+      unverifiedCount,
+      // 県全域タイルでは県全域カードが自分の localCount なので、足すと二重計上になる。
+      wideCount: area === "熊本県全域" ? 0 : wideCards.length,
+      tone,
+    };
+  });
+}

@@ -364,6 +364,7 @@ summary {
 
 .need-grid,
 .controls,
+.area-map,
 .action-section,
 .safety-note,
 footer {
@@ -411,11 +412,113 @@ footer {
   font-weight: 700;
 }
 
+/*
+  地域から選ぶ図。地図ライブラリもタイル画像も使わず、CSS Grid と文字だけで作る。
+  外部のタイルサーバへ通信すると利用者のIPが第三者へ渡り、「実行時に外部へ出ていく通信は無い」
+  （docs/design/api.md）が崩れるため、外形を持たない模式配置にしている（docs/adr/0002）。
+*/
+.area-map {
+  margin-top: 26px;
+}
+
+.area-map__head h2 {
+  margin: 0;
+  font-size: 1.05em;
+  font-weight: 900;
+}
+
+.area-map__caveat {
+  margin: 4px 0 0;
+  font-size: 0.78em;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.area-map__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.area-map__wide-note {
+  margin: 10px 0 0;
+  font-size: 0.8em;
+  line-height: 1.5;
+  color: var(--body-text);
+}
+
+.area-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 76px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--white);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+
+/* 熊本県全域はどこにいても使う入口なので、最上段に全幅で置く。 */
+.area-tile--all {
+  grid-column: 1 / -1;
+}
+
+.area-tile.is-active {
+  border-color: var(--navy);
+  outline: 3px solid var(--navy);
+  outline-offset: -2px;
+}
+
+.area-tile__name {
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.area-tile__count {
+  font-size: 0.78em;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.area-tile__gap {
+  font-size: 0.74em;
+  font-weight: 700;
+  color: var(--warn-ink);
+}
+
+/*
+  調子は「欠けている度合い」だけを表す。良い状態に色を付けない。
+  全カードが期限内でも、それは公式ページの更新を確認できたという意味でしかなく、
+  現地が使えるという意味ではないため、成功を示す緑を置かない。
+*/
+.area-tile--partial {
+  border-left: 4px solid var(--warn-border);
+}
+
+.area-tile--expired {
+  background: var(--chip-bg);
+  border-left: 4px solid var(--red);
+}
+
+.area-tile--expired .area-tile__gap {
+  color: var(--danger-ink);
+}
+
+.area-tile--none {
+  border-style: dashed;
+  box-shadow: none;
+}
+
 .controls {
   display: grid;
-  grid-template-columns: 1fr 1.2fr;
+  grid-template-columns: 1fr;
   gap: 16px;
-  margin-top: 26px;
+  margin-top: 18px;
 }
 
 .controls label {
@@ -1152,6 +1255,10 @@ footer a {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .area-map__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .controls {
     grid-template-columns: 1fr;
   }
@@ -1195,6 +1302,7 @@ footer a {
   .text-size-control,
   .need-grid,
   .controls,
+  .area-map,
   .category-nav-wrap,
   .primary-link,
   .empty-state__reset {

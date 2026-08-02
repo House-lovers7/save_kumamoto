@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   actionCards,
+  areaCoverage,
   categoryLabels,
   formatRelativeTime,
   formatTimestamp,
@@ -119,6 +120,16 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
     }
     return counts;
   }, [municipality]);
+
+  // 地域ごとの案内の数。件数はカバレッジであって現地の稼働状況ではないので、
+  // 画面側の注記（area-map__caveat）と必ずセットで出す。
+  const coverage = useMemo(() => areaCoverage(now), [now]);
+  // 「どの地域でも使える」と書く以上、期限切れを数に含めてはいけない。
+  // 全部期限切れなのに「6件あります」と出すことは、鮮度の捏造にあたる。
+  const wideLiveCount = useMemo(() => {
+    const wide = coverage.find((entry) => entry.area === "熊本県全域");
+    return wide ? wide.localCount - wide.expiredCount : 0;
+  }, [coverage]);
 
   // 保存情報が古くなったら見た目も変える。全部期限切れなのに緑の信号を出さない。
   const freshness = useMemo(() => {
@@ -271,15 +282,79 @@ export function HomeClient({ emergencyMode }: HomeClientProps) {
         ))}
       </nav>}
 
+      {/*
+        市町村の絞り込みを、面（地域）で並べた図にしたもの。地図ライブラリも座標も使わない。
+        点（ピン）を置くには施設名から緯度経度を引くしかなく、それは出典に書かれていない
+        情報を推測で作ることにあたる。加えて地図上のピンは「そこが今使える」と読ませるため、
+        このアプリが引き受けないと決めた稼働状況の判定を、表示だけで肩代わりしてしまう。
+        面で塗れば、既に持っている areas だけで描けて、何も推測しなくて済む（docs/adr/0002）。
+
+        出しているのは「公式ページで確認できた案内が何件あるか」であって現地の状況ではない。
+        件数だけを並べると「多い＝安全」と読まれるので、注記を省略可能にしない。
+      */}
+      {!emergencyMode && <section className="area-map" aria-labelledby="area-map-title">
+        <div className="area-map__head">
+          <h2 id="area-map-title">地域から選ぶ</h2>
+          <p className="area-map__caveat">位置関係は実際の地理と異なります。</p>
+          <p className="area-map__caveat">
+            件数は公式ページで確認できた案内の数です。現地が今使えるかどうかではありません。
+          </p>
+        </div>
+        <div className="area-map__grid">
+          {coverage.map((entry) => (
+            <button
+              key={entry.area}
+              type="button"
+              className={[
+                "area-tile",
+                `area-tile--${entry.tone}`,
+                entry.area === "熊本県全域" ? "area-tile--all" : "",
+                municipality === entry.area ? "is-active" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              aria-pressed={municipality === entry.area}
+              onClick={() => changeArea(entry.area)}
+            >
+              <span className="area-tile__name">{entry.area}</span>
+              {/*
+                期限切れ判定は時刻依存なので、サーバーとクライアントで値が変わりうる。
+                期限切れバッジと同じ扱いにする。
+              */}
+              <span className="area-tile__count" suppressHydrationWarning>
+                {entry.localCount > 0
+                  ? `案内 ${entry.localCount}件`
+                  : "この地域を名指しした案内はありません"}
+              </span>
+              {/*
+                欠けている数は、色ではなく文字で出す。色だけで区別すると、色を区別しにくい
+                利用者と印刷した紙で「一部が期限切れ」であることが消える。
+              */}
+              {(entry.expiredCount > 0 || entry.unverifiedCount > 0) && (
+                <span className="area-tile__gap" suppressHydrationWarning>
+                  {[
+                    entry.expiredCount > 0 ? `期限切れ ${entry.expiredCount}件` : "",
+                    entry.unverifiedCount > 0 ? `未確認 ${entry.unverifiedCount}件` : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" / ")}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+        {/*
+          「名指しの案内なし」を「この地域には何も無い」と読ませないための1行。
+          タイルごとに繰り返すと7回同じ文が並ぶので、図の下に1度だけ置く。
+        */}
+        <p className="area-map__wide-note" suppressHydrationWarning>
+          {wideLiveCount > 0
+            ? `このほかに、どの地域でも使える熊本県全域の案内が${wideLiveCount}件あります。`
+            : "どの地域でも使える熊本県全域の案内は、いまはすべて期限切れです。"}
+        </p>
+      </section>}
+
       {!emergencyMode && <section className="controls" aria-label="表示する情報を選ぶ">
-        <label>
-          <span>市町村</span>
-          <select value={municipality} onChange={(event) => changeArea(event.target.value as (typeof municipalities)[number])}>
-            {municipalities.map((area) => (
-              <option key={area}>{area}</option>
-            ))}
-          </select>
-        </label>
         <label className="search-box">
           <span>キーワード</span>
           <input
