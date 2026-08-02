@@ -20,7 +20,7 @@
 
 ## 実体はTypeScriptのソースコード配列
 
-データの実体は `lib/disaster-data.ts` に**ソースコードとして直接書かれた配列**（`actionCards: ActionCard[]`, `lib/disaster-data.ts:143`）で、ビルド時にバンドルへ埋め込まれる。実行時に読み書きする永続ストアは無い。
+データの実体は `lib/disaster-data.ts` に**ソースコードとして直接書かれた配列**（`actionCards: ActionCard[]`, `lib/disaster-data.ts:153`）で、ビルド時にバンドルへ埋め込まれる。実行時に読み書きする永続ストアは無い。
 
 ## ER図（論理データモデル。DBスキーマではない）
 
@@ -79,7 +79,7 @@ erDiagram
     }
 
     MUNICIPALITY {
-        string name PK "熊本県全域|熊本市|宇城市|宇土市|八代市|氷川町|その他の市町村"
+        string name PK "熊本県全域|熊本市|宇土市|宇城市|氷川町|八代市|その他の市町村（並びは北→南）"
     }
 ```
 
@@ -102,11 +102,11 @@ erDiagram
 
 `sourceStatus: "unavailable"` のカードは3件（`food-and-supplies`, `toilet`, `infant-care`）。`conflict` は型に定義済みだが現在使っているカードは無い（`docs/DESIGN.md:573` の記述をコード側でも再確認済み）。
 
-**この2つの数え方について。** カードは `sourceStatus` を直接書かず、`patrolled()` ヘルパー（`lib/disaster-data.ts:135-141`。第2引数の既定は `"official"`）経由で設定する。そのため `grep 'sourceStatus: "unavailable"'` のような値リテラル検索は、実在する3件に対しても0件を返してしまい根拠にならない。実際に使った根拠は次の2つ。
+**この2つの数え方について。** カードは `sourceStatus` を直接書かず、`patrolled()` ヘルパー（`lib/disaster-data.ts:145-151`。第2引数の既定は `"official"`）経由で設定する。そのため `grep 'sourceStatus: "unavailable"'` のような値リテラル検索は、実在する3件に対しても0件を返してしまい根拠にならない。実際に使った根拠は次の2つ。
 
 | 確認対象 | 方法 | 結果 |
 |---|---|---|
-| `unavailable` の件数 | `patrolled(..., "unavailable")` の呼び出し箇所（`lib/disaster-data.ts:373`, `542`, `632`）と、`unavailable` のとき必須になる `unverified` フィールドの出現箇所（`374`, `543`, `633`）を突き合わせ | 3件・両者一致 |
+| `unavailable` の件数 | `patrolled(..., "unavailable")` の呼び出し箇所（`lib/disaster-data.ts:383`, `552`, `642`）と、`unavailable` のとき必須になる `unverified` フィールドの出現箇所（`384`, `553`, `643`）を突き合わせ | 3件・両者一致 |
 | `conflict` の使用 | `grep -n conflict lib/disaster-data.ts` | ヒットは型定義 `lib/disaster-data.ts:12` の1行のみ（＝カードでの使用0件） |
 
 ## 正典 → ネイティブ生成の関係
@@ -126,7 +126,7 @@ erDiagram
 
 中間の `municipalities` / `categoryLabels` / `actionCards` はJavaScriptの値として再構築され、`actionCards` は `JSON.stringify(actionCards, null, 2)` でそのまま埋め込まれる（`scripts/generate-mobile-data.mjs:36-63`）。マーカー文字列を消す・並びを変えると生成処理が例外を投げて止まる（`scripts/generate-mobile-data.mjs:23-29`）。`ActionCard` にフィールドを追加すれば自動的にネイティブへ配られる。
 
-`tests/mobile-parity.test.mjs` が「生成物が正典と `deepEqual` で一致すること」と「再生成し忘れが無いこと」を機械的に固定している。`visibleFacts()`（期限切れの `dated: true` な `facts` を非表示にする関数）もWeb・ネイティブ双方がこの共通関数経由でしか描画しないことを同テストが確認する（`docs/DESIGN.md:590` の記述と実装 `lib/disaster-data.ts:1077-1080` を照合）。
+`tests/mobile-parity.test.mjs` が「生成物が正典と `deepEqual` で一致すること」と「再生成し忘れが無いこと」を機械的に固定している。`visibleFacts()`（期限切れの `dated: true` な `facts` を非表示にする関数）もWeb・ネイティブ双方がこの共通関数経由でしか描画しないことを同テストが確認する（`docs/DESIGN.md:590` の記述と実装 `lib/disaster-data.ts:1087-1090` を照合）。
 
 ## 制約（テストで機械的に守っているもの。`tests/data-contract.test.mjs`）
 
@@ -147,7 +147,7 @@ erDiagram
 | `irreversibleOrder` | 2〜5件・各5〜60文字 |
 | 検索到達性 | 「こども」「くすり」「みず」等18語から意図したカードへ到達すること |
 | カテゴリ網羅 | R1必須8カテゴリすべてを備える |
-| 失効境界 | `now.getTime() >= expiresAt` で失効側へ倒れる（`isExpired()`, `lib/disaster-data.ts:1065-1067`） |
+| 失効境界 | `now.getTime() >= expiresAt` で失効側へ倒れる（`isExpired()`, `lib/disaster-data.ts:1075-1077`） |
 | `availableWindows` | 各枠 `start < end`／時刻順で重ならない／全枠が `checkedAt` と同じ日（JST）／**最終枠の `end` は `expiresAt` と一致**／持つカードは `caution` に「出発前」を含む |
 | 受付時間の境界 | `start <= now < end` を「開いている」とする（`serviceWindow()`）。開始は含み終了は含まない＝閉まっている方へ倒す |
 

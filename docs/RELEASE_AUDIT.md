@@ -23,7 +23,7 @@
 | アクセシビリティ | VoiceOver/TalkBack、文字拡大、キーボード | [中] Webの文字拡大・キーボード構造は確認済み。実支援技術は未検証 |
 | 現地評価 | 熊本在住者または支援者3〜5名の記録 | [低] 未実施（2026-08-01 スコープ改訂で「公開後の改善入力」へ。Web公開のブロッカーではない） |
 | 運用停止 | 管理者が数分以内に案内停止できる実境界 | [中] 2026年7月31日更新。verified: 実行時env経路（再ビルド不要）、SSRとRSCペイロード双方への反映、単一ビルドでのON/OFF回帰8件、populate前提条件の機械検査、workerd経路（`.dev.vars`→miniflare bindings）、実ブラウザのhydration後DOM。未検証: 本番Workersでの実操作と反映時間、停止中デプロイでの維持、実利用者への到達遅延、停止判断者の実オペレーション |
-| 公開問い合わせ | 公開可能な運営者・訂正窓口・対応時間 | [中] 体制は確定（運営者1人が兼務／窓口はGitHub Issues／9:00〜21:00 JSTベストエフォート、`docs/OPERATIONS.md`）。ただしremote未設定でIssuesのURLが存在せず未達 |
+| 公開問い合わせ | 公開可能な運営者・訂正窓口・対応時間 | [高] 2026-08-02 更新。体制は確定（運営者1人が兼務／9:00〜21:00 JSTベストエフォート、`docs/OPERATIONS.md`）。窓口URLも実在する: https://github.com/House-lovers7/save_kumamoto/issues （2026-08-01 開設、public repo かつ Issues 有効を `gh api` で確認済み）。**単一障害点（担当1人）は解消していない**が、公開後も続く前提として `docs/OPERATIONS.md` に明記済みで、停止条件ではない |
 | Web本番配信 | 公開URL、CDN、低速回線、オフライン再起動、rollback | [低] 未実施 |
 | ストア配信 | 署名済みIPA/AAB、TestFlight/Internal testing、審査 | [低] 未実施 |
 | 公開通知 | 公開URLと検証結果を指定先へ送信 | [低] 公開後かつ送信直前の承認待ち |
@@ -103,8 +103,14 @@ Mobileのproduction依存監査はCritical/High 0件、Moderate 11件です。Mo
    それ以外のカードは `checkedAt` が公開時点から24時間以内であること。
    24時間期限のため、**毎日1回の再確認巡回が継続する限りにおいて**カードは有効。
    氷川町の配布カードだけは当日限りの告知なので配布終了時刻で失効する。
-2. 公開問い合わせ先、訂正担当、停止判断者、対応時間を確定する。体制は確定済み（`docs/OPERATIONS.md`）。
-   残るのは**問い合わせ窓口のURLの実在**（remote未設定でGitHub Issuesが存在しない）。
+2. 公開問い合わせ先、訂正担当、停止判断者、対応時間を確定する。**達成済み**［高］（2026-08-02 更新）。
+   体制は確定済みで、停止判断者・訂正担当は運営者本人（GitHubアカウント名で掲出。本名は出さない）、
+   対応可能時間は 9:00〜21:00 JST・ベストエフォート（`docs/OPERATIONS.md` 第2章）。
+   懸案だった**問い合わせ窓口のURLの実在**も解消した。
+   https://github.com/House-lovers7/save_kumamoto/issues を 2026-08-01 に開設し、
+   public repo かつ Issues 有効であることを `gh api` で確認済み（`docs/OPERATIONS.md`「問い合わせ窓口」）。
+   単一障害点であること（担当が1人）は解消していないが、これは公開後も続く前提として
+   `docs/OPERATIONS.md`「単一障害点であること」に明記しており、公開の停止条件ではない。
 3. 数分以内の停止手段とrollback手順を**本番環境で**確認する。ローカルとworkerdでの確認は済んでいるが、
    本番では次を順に実施する。
    1. `npx wrangler secret put EMERGENCY_MODE`（値 `true`）を実行する
