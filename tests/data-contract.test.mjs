@@ -91,6 +91,53 @@ test("全カードが断定しない行動順序ステップを持つ", () => {
   }
 });
 
+// 紙（A4掲示物）は summary・steps・caution などをそのまま刷る（lib/poster.ts）。
+// 画面操作の動詞やアプリの一人称が入ると、端末を持たない読み手に実行できない指示や、
+// 指す先が消えた一人称が紙に載る。型はこの層を禁じられないので、運用規約をここで
+// 機械的に固定する（2026-08-03 運営者決定。docs/design/zero-base-rethink.md §4-1）。
+// action は画面のボタンラベルで、紙へは降ろさない（PosterModel から除外済み）ため対象外。
+const MEDIA_BOUND_PHRASES = /を開く|を開い|タップ|クリック|このアプリ|本アプリ/;
+
+test("紙に載る文言に画面前提の語彙を書かない", () => {
+  for (const card of actionCards) {
+    assert.doesNotMatch(card.summary, MEDIA_BOUND_PHRASES, `${card.id}: summary`);
+    assert.doesNotMatch(card.caution, MEDIA_BOUND_PHRASES, `${card.id}: caution`);
+    for (const step of card.steps) {
+      assert.doesNotMatch(step, MEDIA_BOUND_PHRASES, `${card.id}: steps「${step}」`);
+    }
+    for (const fact of card.facts ?? []) {
+      for (const item of fact.items) {
+        assert.doesNotMatch(item, MEDIA_BOUND_PHRASES, `${card.id}: facts「${item}」`);
+      }
+    }
+    for (const point of card.verifyPoints ?? []) {
+      assert.doesNotMatch(point.why, MEDIA_BOUND_PHRASES, `${card.id}: verifyPoints.why`);
+      for (const option of point.options) {
+        assert.doesNotMatch(option, MEDIA_BOUND_PHRASES, `${card.id}: verifyPoints「${option}」`);
+      }
+    }
+    for (const item of card.irreversibleOrder ?? []) {
+      assert.doesNotMatch(item, MEDIA_BOUND_PHRASES, `${card.id}: irreversibleOrder「${item}」`);
+    }
+    if (card.unverified) {
+      assert.doesNotMatch(card.unverified, MEDIA_BOUND_PHRASES, `${card.id}: unverified`);
+    }
+  }
+});
+
+// 検査そのものの負例。この正規表現が緩んで何も検出しなくなったら、上のテストは
+// 全カードが通っても意味を失う。検出できることを実際の違反例で固定する。
+test("画面前提の語彙の検査は違反文言を検出する", () => {
+  for (const phrase of [
+    "上下水道局の緊急情報で今日のお知らせを開く",
+    "古い画面を開いている場合は更新日時も見てください",
+    "このアプリは給水を保証しません",
+    "ボタンをタップして確認する",
+  ]) {
+    assert.match(phrase, MEDIA_BOUND_PHRASES, phrase);
+  }
+});
+
 test("困りごとのかな・話し言葉から該当カードへ届く", () => {
   const search = (word) => {
     const q = word.toLowerCase();
