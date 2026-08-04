@@ -11,14 +11,15 @@ const { d1, r2 } = hostingConfig;
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 
+// Worker 設定の正典は `wrangler.jsonc`（`main` / `compatibility_date` /
+// `compatibility_flags` / `assets` / `images`）。ここには hosting.json から決まる
+// 動的な binding だけを置く。
+//
+// `compatibility_date` と `compatibility_flags` をここへ書き戻さないこと。
+// wrangler.jsonc とマージされて `compatibility_flags` が重複し、Cloudflare API が
+// デプロイを拒否する（code 10021）。2026-08-05 に実際に本番デプロイが落ちた。
+// 停止スイッチの前提条件としての意味は wrangler.jsonc のコメントに書いてある。
 const localBindingConfig = {
-  main: "./worker/index.ts",
-  // 緊急停止スイッチの前提条件。Workers が bindings を `process.env` へ流し込むのは
-  // `nodejs_compat` かつ compatibility_date >= 2025-04-01 のときだけ。
-  // プラグイン既定値に任せたままだと、更新でこの日付を割った瞬間に
-  // `lib/emergency-mode.ts` が環境変数を読めなくなり、停止が黙って効かなくなる。
-  compatibility_date: "2026-07-28",
-  compatibility_flags: ["nodejs_compat"],
   d1_databases: d1
     ? [
         {
@@ -57,6 +58,9 @@ export default defineConfig(async () => {
       sites(),
       cloudflare({
         viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
+        // 正典を明示する。ここを外すと `vinext deploy` が「設定が無い」と判定して
+        // wrangler.jsonc を勝手に作り直し、重複マージでデプロイが落ちる。
+        configPath: "./wrangler.jsonc",
         config: localBindingConfig,
       }),
     ],

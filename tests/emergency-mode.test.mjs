@@ -150,3 +150,40 @@ test("停止スイッチが本番ランタイムへ届く前提条件を固定�
     `compatibility_date ${wrangler.compatibility_date} では process.env が埋まらない`,
   );
 });
+
+// 2026-08-05、本番デプロイが `Compatibility flag specified multiple times`（code 10021）で
+// 失敗した。原因は `wrangler.jsonc` と `vite.config.ts` の両方が `nodejs_compat` を宣言し、
+// マージで重複したこと。上のテストは `.includes()` で見ていたため重複を素通しし、
+// 73件すべてPASSしたまま本番だけが落ちた。ローカル検査を本番境界の証拠に読み替えられない、
+// という原則がそのまま出た形なので、機械で検出できる部分をここで塞ぐ。
+test("デプロイ設定の正典が1つで、フラグが重複しない", async () => {
+  const wrangler = JSON.parse(
+    await readFile(new URL("../dist/server/wrangler.json", import.meta.url), "utf8"),
+  );
+
+  // 重複そのもの。Cloudflare API が拒否する。
+  const flags = wrangler.compatibility_flags ?? [];
+  assert.equal(
+    new Set(flags).size,
+    flags.length,
+    `compatibility_flags が重複している: ${JSON.stringify(flags)}`,
+  );
+
+  // `worker/index.ts` の画像最適化が env.IMAGES を使う。binding が落ちると実行時に落ちる。
+  assert.equal(wrangler.images?.binding, "IMAGES");
+
+  // ルートに wrangler 設定が無いと、`vinext deploy` が起動のたびに wrangler.jsonc を
+  // 作り直す（deploy.js の generateWranglerConfig）。作り直された設定は compatibility_date が
+  // 実行日になり、compatibility_flags も再宣言されるので、重複が復活する。
+  const rootConfig = await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8");
+  assert.match(rootConfig, /"compatibility_flags"/);
+  assert.match(rootConfig, /"nodejs_compat"/);
+
+  // 正典は1つ。vite.config.ts 側へ書き戻すと、また重複してデプロイが落ちる。
+  const viteConfig = await readFile(new URL("../vite.config.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(
+    viteConfig,
+    /^\s*compatibility_(date|flags)\s*:/m,
+    "compatibility_date / compatibility_flags の正典は wrangler.jsonc だけにする",
+  );
+});

@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kumamoto-action-navigator-web",
+
+  // 緊急停止スイッチの前提条件。Workers が bindings（vars / secrets）を `process.env` へ
+  // 流し込むのは `nodejs_compat` かつ compatibility_date >= 2025-04-01 のときだけ。
+  // ここを緩めると `lib/emergency-mode.ts` が環境変数を読めなくなり、
+  // コードは正しいのに本番で停止が黙って効かなくなる（docs/OPERATIONS.md 3.6）。
+  // ビルド生成物側は `tests/emergency-mode.test.mjs` が機械的に検査している。
+  //
+  // この2項目は **このファイルだけ** に置く。`vite.config.ts` の cloudflare({ config })
+  // へ同じキーを書くと両方がマージされ、`compatibility_flags` が重複したままビルドされる。
+  // Cloudflare API はこれを拒否する
+  // （`Compatibility flag specified multiple times` / code 10021。2026-08-05 に実際の
+  // デプロイが失敗した。ローカルの `npm test` は重複を素通しした）。
+  "compatibility_date": "2026-07-28",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "main": "./worker/index.ts",
+  "assets": {
+    "directory": "dist/client",
+    "not_found_handling": "none",
+    "binding": "ASSETS"
+  },
+  // `worker/index.ts` の画像最適化エンドポイントが `env.IMAGES` を使う。
+  "images": {
+    "binding": "IMAGES"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
