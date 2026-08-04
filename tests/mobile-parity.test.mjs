@@ -5,7 +5,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import { actionCards as webCards, municipalities as webAreas } from "../lib/disaster-data.ts";
+import {
+  actionCards as webCards,
+  municipalities as webAreas,
+  serviceWindow as webServiceWindow,
+} from "../lib/disaster-data.ts";
 import {
   actionCards as mobileCards,
   categoryLabels as mobileCategoryLabels,
@@ -15,6 +19,7 @@ import {
   siteCheckedAt as mobileSiteCheckedAt,
 } from "../apps/mobile/src/data/actions.ts";
 import { renderMobileData, TARGET_PATH } from "../scripts/generate-mobile-data.mjs";
+import { plainCard, twoWindowCard } from "./fixtures/cards.mjs";
 
 test("生成物が正典と1件も欠けずに一致する", () => {
   assert.deepEqual(
@@ -201,19 +206,39 @@ test("ネイティブ版の期限切れ判定と接続確認時刻が Web と同
 
 // 受付時間外の判定が Web にしか無いと、ネイティブ利用者だけが閉まっている場所へ向かう。
 test("ネイティブ版の受付時間帯の判定が Web と同じ挙動", () => {
-  const hikawa = mobileCards.find((card) => card.id === "food-hikawa");
-  assert.ok(hikawa, "food-hikawa カードが生成物にも存在する");
+  // 生成物のカードを固定具にすると、巡回で当日限りの告知が入れ替わるたびに落ちる
+  // （2026-08-04 には受付時間帯を持つカードが一時的に0枚になった）。
+  // 見たいのは「同じ入力に対して Web とネイティブが同じ判定を返すか」なので、
+  // 合成カードを両方の実装へ通して突き合わせる。
+  const moments = [
+    "2026-08-01T08:59:00+09:00",
+    "2026-08-01T09:00:00+09:00",
+    "2026-08-01T11:00:00+09:00",
+    "2026-08-01T12:00:00+09:00",
+    "2026-08-01T15:00:00+09:00",
+    "2026-08-01T17:00:00+09:00",
+  ];
+  for (const moment of moments) {
+    const at = new Date(moment);
+    assert.deepEqual(
+      mobileServiceWindow(twoWindowCard, at),
+      webServiceWindow(twoWindowCard, at),
+      `${moment}: ネイティブと Web の判定がずれている`,
+    );
+  }
+  // 判定そのものが素通りしていないことも押さえる（両方が unknown を返すだけでも
+  // deepEqual は通ってしまうため）。
   assert.equal(
-    mobileServiceWindow(hikawa, new Date("2026-08-01T12:00:00+09:00")).state,
+    mobileServiceWindow(twoWindowCard, new Date("2026-08-01T12:00:00+09:00")).state,
     "between",
     "期限内でも配布の間の時間は受付時間外",
   );
   assert.equal(
-    mobileServiceWindow(hikawa, new Date("2026-08-01T15:00:00+09:00")).state,
+    mobileServiceWindow(twoWindowCard, new Date("2026-08-01T15:00:00+09:00")).state,
     "open",
   );
   assert.equal(
-    mobileServiceWindow(mobileCards[0], new Date("2026-08-01T12:00:00+09:00")).state,
+    mobileServiceWindow(plainCard, new Date("2026-08-01T12:00:00+09:00")).state,
     "unknown",
     "受付時間帯を持たないカードには判定を足さない",
   );

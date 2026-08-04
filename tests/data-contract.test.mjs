@@ -11,6 +11,7 @@ import {
   serviceWindowNotice,
   visibleFacts,
 } from "../lib/disaster-data.ts";
+import { oneWindowCard, plainCard, twoWindowCard } from "./fixtures/cards.mjs";
 
 /** 時刻を日本時間の「日付」だけに落とす。テストが実行機のタイムゾーンに依存しないようにする。 */
 function jstDate(value) {
@@ -266,10 +267,17 @@ test("確認できていないカードの答えは問い合わせ先に限る",
 
 // 「今日どこで何時に受け取れるか」が本体のカード。リンクを開かせて探させる形へ
 // 戻したら、ここで止める。深いURLが存在しない出典なので、探す先の名指しも必須にする。
+// 当日限りの告知を扱うカードは、その日の場所と時間をカード内に持ち、探す先を名指しする。
+//
+// ただし「告知が出典から消える」ことは実際に起きる（2026-08-04、氷川町の配布告知）。
+// 消えた告知の内容をカードに残し続けることこそが、終わった配布へ人を向かわせる失敗なので、
+// unavailable へ落ちたカードはこの要求から外す。何が確認できていないかは
+// 「確認できていないカードは、何が確認できていないかを必ず書く」が別途強制している。
 test("当日限りのカードは、その日の場所と時間をカード内に持つ", () => {
   for (const id of ["water-station", "food-hikawa"]) {
     const card = actionCards.find((item) => item.id === id);
     assert.ok(card, `${id} カードがない`);
+    if (card.sourceStatus === "unavailable") continue;
     assert.ok(card.facts && card.facts.length >= 1, `${id}: facts が無い`);
     assert.ok(
       card.facts.some((fact) => fact.dated === true),
@@ -278,6 +286,18 @@ test("当日限りのカードは、その日の場所と時間をカード内�
     assert.ok(
       typeof card.sourceLandmark === "string" && card.sourceLandmark.trim().length >= 4,
       `${id}: 深いURLが無い出典なので sourceLandmark で探す先を名指しする`,
+    );
+  }
+});
+
+// 上の免除が「dated を付け忘れただけのカード」を素通りさせないための対。
+// その日限りの内容を出すなら、探す先の名指しは媒体を問わず必要になる。
+test("その日限りの答えを出すカードは、探す先を必ず名指しする", () => {
+  for (const card of actionCards) {
+    if (!card.facts?.some((fact) => fact.dated === true)) continue;
+    assert.ok(
+      typeof card.sourceLandmark === "string" && card.sourceLandmark.trim().length >= 4,
+      `${card.id}: dated な答えを出すなら sourceLandmark で探す先を名指しする`,
     );
   }
 });
@@ -447,21 +467,17 @@ test("受付時間帯を持たないカードは判定を足さない", () => {
 // 間の 11:00〜15:00 は誰もいない。expiresAt（17:00）だけを見ると「有効」なので、
 // この4時間に向かった人は閉まっている場所に着く。
 test("期限内でも受付時間外の時間帯があることを判定できる", () => {
-  const card = actionCards.find((item) => item.id === "food-hikawa");
-  assert.ok(card, "food-hikawa カードが存在する");
-
   const noon = new Date("2026-08-01T12:00:00+09:00");
-  assert.equal(isExpired(card, noon), false, "12:00 は期限内");
+  assert.equal(isExpired(twoWindowCard, noon), false, "12:00 は期限内");
   assert.equal(
-    serviceWindow(card, noon).state,
+    serviceWindow(twoWindowCard, noon).state,
     "between",
     "期限内でも第1回と第2回の間は受付時間外",
   );
 });
 
 test("受付時間帯の状態は各境界で切り替わる", () => {
-  const hikawa = actionCards.find((item) => item.id === "food-hikawa");
-  const at = (value) => serviceWindow(hikawa, new Date(value));
+  const at = (value) => serviceWindow(twoWindowCard, new Date(value));
 
   // 開始は含み、終了は含まない（閉まっている方へ倒す）。
   assert.equal(at("2026-08-01T08:59:00+09:00").state, "before");
@@ -478,11 +494,10 @@ test("受付時間帯の状態は各境界で切り替わる", () => {
   assert.equal(at("2026-08-01T16:00:00+09:00").current.label, "第2回");
 
   // 最終枠の終了＝失効なので、closed は通常 isExpired が先に立つ。
-  assert.equal(isExpired(hikawa, new Date("2026-08-01T17:00:00+09:00")), true);
+  assert.equal(isExpired(twoWindowCard, new Date("2026-08-01T17:00:00+09:00")), true);
 
   // 枠が1つだけのカードには「間の時間」が無い。
-  const water = actionCards.find((item) => item.id === "water-station");
-  const atWater = (value) => serviceWindow(water, new Date(value));
+  const atWater = (value) => serviceWindow(oneWindowCard, new Date(value));
   assert.equal(atWater("2026-08-01T07:59:00+09:00").state, "before");
   assert.equal(atWater("2026-08-01T08:00:00+09:00").state, "open");
   assert.equal(atWater("2026-08-01T18:59:00+09:00").state, "open");
@@ -493,7 +508,7 @@ test("受付時間帯の状態は各境界で切り替わる", () => {
 // 言い切ってよいが、「開いている」は中止・早期終了がありうるので言い切ってはいけない。
 // 文言がこの非対称を守っていることを機械で止める。
 test("受付時間内は断定せず、受付時間外は断定する", () => {
-  const card = actionCards.find((item) => item.id === "food-hikawa");
+  const card = twoWindowCard;
 
   const open = serviceWindowNotice(card, new Date("2026-08-01T15:30:00+09:00"));
   assert.equal(open.tone, "open");
@@ -513,8 +528,10 @@ test("受付時間内は断定せず、受付時間外は断定する", () => {
   assert.match(before.detail, /第1回は9:00からの予定です/);
 
   // 受付時間帯を持たないカードには、この案内を一切足さない。
-  const plain = actionCards.find((item) => !item.availableWindows);
-  assert.equal(serviceWindowNotice(plain, new Date("2026-08-01T12:00:00+09:00")), null);
+  assert.equal(serviceWindowNotice(plainCard, new Date("2026-08-01T12:00:00+09:00")), null);
+  const plainReal = actionCards.find((item) => !item.availableWindows);
+  assert.ok(plainReal, "受付時間帯を持たないカードが正典にも存在する");
+  assert.equal(serviceWindowNotice(plainReal, new Date("2026-08-01T12:00:00+09:00")), null);
 });
 
 // 「17:00まで」だけでは、移動時間を足すと間に合わないことに気づけない。
