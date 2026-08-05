@@ -22,9 +22,9 @@
 | iOS/Android実行 | Simulatorおよび実機で主要画面を操作 | [中] 2026年8月1日にAndroidエミュレータ（Pixel_8_API_35）で `npx expo run:android` を通し、トップ・困りごと絞り込み・カードの開閉・誤認防止表示（未確認タグ／確認できていません／確認項目／個別の有効期限）を実描画で確認した。**実機とiOSは未検証**。iOSは `expo-modules-jsi` がSwift 6.3を要求し xcodebuild error 65（手元は6.2、Xcode 26.4+への更新が必要） |
 | アクセシビリティ | VoiceOver/TalkBack、文字拡大、キーボード | [中] Webの文字拡大・キーボード構造は確認済み。実支援技術は未検証 |
 | 現地評価 | 熊本在住者または支援者3〜5名の記録 | [低] 未実施（2026-08-01 スコープ改訂で「公開後の改善入力」へ。Web公開のブロッカーではない） |
-| 運用停止 | 管理者が数分以内に案内停止できる実境界 | [中] 2026年7月31日更新。verified: 実行時env経路（再ビルド不要）、SSRとRSCペイロード双方への反映、単一ビルドでのON/OFF回帰8件、populate前提条件の機械検査、workerd経路（`.dev.vars`→miniflare bindings）、実ブラウザのhydration後DOM。未検証: 本番Workersでの実操作と反映時間、停止中デプロイでの維持、実利用者への到達遅延、停止判断者の実オペレーション |
+| 運用停止 | 管理者が数分以内に案内停止できる実境界 | [高] 2026年8月6日更新。verified: ローカル/workerd/hydration後DOM（7月31日）に加え、**本番Workersでの実操作**を実測 — 停止約7秒・復帰約2秒、停止中デプロイ（Version `d65da2d7`）で停止維持、運営者本人が put/deploy/delete を実行（`docs/qa/emergency-mode-production-2026-08-06/`）。未検証: 実利用者への到達遅延の分布、停止中表示の実ブラウザ目視 |
 | 公開問い合わせ | 公開可能な運営者・訂正窓口・対応時間 | [高] 2026-08-02 更新。体制は確定（運営者1人が兼務／9:00〜21:00 JSTベストエフォート、`docs/OPERATIONS.md`）。窓口URLも実在する: https://github.com/House-lovers7/save_kumamoto/issues （2026-08-01 開設、public repo かつ Issues 有効を `gh api` で確認済み）。**単一障害点（担当1人）は解消していない**が、公開後も続く前提として `docs/OPERATIONS.md` に明記済みで、停止条件ではない |
-| Web本番配信 | 公開URL、CDN、低速回線、オフライン再起動、rollback | [低] 未実施 |
+| Web本番配信 | 公開URL、CDN、低速回線、オフライン再起動、rollback | [中] 公開URL（https://kumamoto-action-navigator-web.cokomo-gt.workers.dev）は配信中で、2026年8月6日にHTTP指紋で通常表示・失効カード0を確認。低速回線・オフライン再起動・rollback実走は未実施 |
 | ストア配信 | 署名済みIPA/AAB、TestFlight/Internal testing、審査 | [低] 未実施 |
 | 公開通知 | 公開URLと検証結果を指定先へ送信 | [低] 公開後かつ送信直前の承認待ち |
 
@@ -48,6 +48,17 @@ Mobileのproduction依存監査はCritical/High 0件、Moderate 11件です。Mo
 ## 検証実測ログ
 
 日付ごとの実測値。ここで見つけて直した不具合そのものは `docs/FIXES.md` に分けている。
+
+### 2026年8月6日 未明（停止スイッチの本番実測と巡回反映）
+
+- **停止スイッチの本番実測**（公開URL: https://kumamoto-action-navigator-web.cokomo-gt.workers.dev）:
+  運営者本人の実行で、停止（secret put →「緊急縮退中」）**約7秒**・復帰（secret delete →「通常表示」）
+  **約2秒**。停止中デプロイでも停止維持・repo無変更。復帰後の指紋はベースラインと機械比較で差分0。
+  詳細と限界（実ブラウザ目視なし等）は `docs/qa/emergency-mode-production-2026-08-06/`
+- **巡回**: `npm run patrol:diff` 20カード・17URL で取得失敗0・要確認0（01:44 JST）。
+  第37報の応急給水活動終了（8/5 19:00）を water-station カードへ反映し臨時給水栓の案内に更新、
+  無料入浴は施設23→25か所へ追随。デプロイ（Version `cf05f3f5`）後の本番は通常表示・失効カード0
+- **機械ゲート**: `npm run lint` 成功 / `npm test` **74件成功**（巡回データ更新後）
 
 ### 2026年8月1日 13時（カード内に答えを出す改修後）
 
@@ -111,14 +122,13 @@ Mobileのproduction依存監査はCritical/High 0件、Moderate 11件です。Mo
    public repo かつ Issues 有効であることを `gh api` で確認済み（`docs/OPERATIONS.md`「問い合わせ窓口」）。
    単一障害点であること（担当が1人）は解消していないが、これは公開後も続く前提として
    `docs/OPERATIONS.md`「単一障害点であること」に明記しており、公開の停止条件ではない。
-3. 数分以内の停止手段とrollback手順を**本番環境で**確認する。ローカルとworkerdでの確認は済んでいるが、
-   本番では次を順に実施する。
-   1. `npx wrangler secret put EMERGENCY_MODE`（値 `true`）を実行する
-   2. **別端末**で `/` から個別カードが消え、`/status` が「緊急縮退中」になることを確認する
-   3. 1→2 にかかった実時間を記録する
-   4. 停止中に無害な変更をデプロイし、`/status` が「緊急縮退中」のままであることを確認する
-      （`wrangler deploy` はvarsを消すが secrets は消えない、という前提の実地確認）
-   5. `npx wrangler secret delete EMERGENCY_MODE` で解除し、通常表示へ戻ることを確認する
+3. 数分以内の停止手段とrollback手順を**本番環境で**確認する。**→ 2026年8月6日未明に実施済み**[高]。
+   1. `echo true | npx wrangler secret put EMERGENCY_MODE` → **約7秒**で `/status` が「緊急縮退中」
+   2. `/` のHTTP指紋でカード消滅・119/110残存を確認（実ブラウザ目視は未実施のまま解除した）
+   3. 停止中に同一ビルドを `npx vinext deploy`（Version `d65da2d7`）→「緊急縮退中」のまま維持
+      （secrets はデプロイで消えない、という前提の実地確認が取れた）
+   4. `npx wrangler secret delete EMERGENCY_MODE` → **約2秒**で通常表示へ復帰・指紋ベースライン一致
+   実測ログ: `docs/qa/emergency-mode-production-2026-08-06/`
 4. 本番URLで低速回線、オフライン再起動、主要リンクを確認する（デプロイ直後、公開告知の前）。
 5. Web公開、メール送信の各外部操作について承認を得る。
 

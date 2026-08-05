@@ -1,0 +1,31 @@
+{
+  "label": "after-stop",
+  "at": "2026-08-05T16:25:18.033Z",
+  "serverDate": "Wed, 05 Aug 2026 16:25:17 GMT",
+  "root": {
+    "status": 200,
+    "bytes": 5927,
+    "cacheControl": null
+  },
+  "status": {
+    "code": 200,
+    "mode": "緊急縮退中",
+    "cacheControl": "no-store"
+  },
+  "counts": {
+    "110": 3,
+    "119": 3,
+    "応急給水": 0,
+    "無料入浴": 0,
+    "り災証明": 0,
+    "火の君文化センター": 0,
+    "氷川町": 0,
+    "確認できません": 0,
+    "有効期限切れ": 0,
+    "emergency-strip": 1,
+    "action-section": 0,
+    "need-grid": 0,
+    "area-map": 0,
+    "skip-link": 0
+  }
+}

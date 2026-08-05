@@ -98,14 +98,16 @@ npx wrangler secret put EMERGENCY_MODE
 # 値の入力を求められたら true と入れる
 ```
 
-> **未検証の注意（2026-08-01）**［中］: このコマンドは**そのままでは動かない可能性がある**。
-> リポジトリのルートに `wrangler.toml` / `wrangler.jsonc` が無く、Worker 設定は
-> ビルド生成物の `dist/server/wrangler.json`（Worker 名 `kumamoto-action-navigator-web`）に
-> しか無い。wrangler が設定を見つけられず、`--config dist/server/wrangler.json` か
-> `--name kumamoto-action-navigator-web` の指定が要ると見ている。
-> **緊急時に最初に叩く手順なので、本番デプロイの承認と同時に実行して確定させること。**
+> **本番実測（2026-08-06）**［高］: このコマンドは**リポジトリのルートで実行すれば追加指定なしで動く**
+> （ルートの `wrangler.jsonc` が Worker 名 `kumamoto-action-navigator-web` を解決する。f8ea7e3 以降）。
+> `echo true | npx wrangler secret put EMERGENCY_MODE` の一発で通り、
+> **コマンド開始から約7秒**で本番 `/status` が「緊急縮退中」へ遷移した。
+> **リポジトリ外のディレクトリから実行すると `Required Worker name missing` で失敗する**
+> （2026-08-06 01:23 実測。さらにリポジトリ外の `npx` は wrangler を別バージョンで
+> 新規インストールして動く）。緊急時はまず `cd` でリポジトリルートへ移動する。
 > あわせて、デプロイコマンドは `wrangler deploy` ではなく **`npx vinext deploy`**（`vinext` が
 > wrangler をラップしている）。`npm run` にデプロイ用スクリプトは無い。
+> 実測ログ: `docs/qa/emergency-mode-production-2026-08-06/`。
 
 1. 上のコマンドを実行する
 2. `/status` を開き、**「緊急縮退中」**と表示されることを確認する
@@ -128,6 +130,10 @@ npx wrangler secret delete EMERGENCY_MODE
 
 `/status` が「通常表示」に戻ることを確認する。secret は読み出せないため、
 **`/status` が現在の停止状態を知る唯一の経路**になる。
+
+本番実測（2026-08-06）［高］: delete 開始から**約2秒**で「通常表示」へ復帰し、
+`/` の指紋（バイト数・カード語の出現数）は停止前のベースラインと完全一致した
+（`docs/qa/emergency-mode-production-2026-08-06/`）。
 
 ### 3.4 停止が届く範囲［高］
 
@@ -667,14 +673,15 @@ No-Go #2 を `verified` にするために必要なもの。
 | 2 | 同一ビルドのまま環境変数だけで切り替わる | `docs/qa/emergency-mode-2026-07-31/` の実測 | **済**［高］ |
 | 3 | hydration 後もカードが復活しない | 実ブラウザの実DOM計測（同上） | **済**［高］ |
 | 4 | workerd（本番と同じランタイム）で bindings から届く | `.dev.vars` 経由の実測（同上） | **済**［高］ |
-| 5 | **本番 Workers で実操作し、反映までの実時間を測る** | secret を設定 → 別端末で `/` と `/status` を確認 → 解除 | **未**（デプロイ承認後） |
-| 6 | **停止中にデプロイしても停止が維持される** | 停止中に無害な変更をデプロイし、`/status` が「緊急縮退中」のままか確認 | **未** |
+| 5 | **本番 Workers で実操作し、反映までの実時間を測る** | secret を設定 → 別端末で `/` と `/status` を確認 → 解除 | **済**［高］2026-08-06 実測: 停止 約7秒／復帰 約2秒。指紋前後比較で確認（実ブラウザ目視は未実施）。`docs/qa/emergency-mode-production-2026-08-06/` |
+| 6 | **停止中にデプロイしても停止が維持される** | 停止中に無害な変更をデプロイし、`/status` が「緊急縮退中」のままか確認 | **済**［高］2026-08-06 停止中に同一ビルドをデプロイ（Version `d65da2d7`）。「緊急縮退中」維持・指紋完全一致・repo 無変更 |
 | 7 | **問い合わせ窓口の URL が実在する** | remote を設定し、Issues が開けること | **済**［高］https://github.com/House-lovers7/save_kumamoto/issues（2026-08-01 開設） |
-| 8 | **停止判断者が実際に手順を実行できる** | 運営者本人が 3.2 を1回通す | **未** |
+| 8 | **停止判断者が実際に手順を実行できる** | 運営者本人が 3.2 を1回通す | **済**［高］2026-08-06 運営者本人が put / deploy / delete の3操作を実行（リポジトリ外からの失敗→復旧も本人が経験済み） |
 | 9 | **ネイティブに停止が届かないことを受諾する** | 運営者の明示的な同意 | **未** |
 
-1〜4 が済んでも判定は `implementation_complete_boundary_unverified` のまま。
-localhost と miniflare で採れた証拠を、本番境界の証拠に読み替えない。
+1〜8 は済み。残るのは 9（ネイティブ非対称の受諾）のみで、これは Web 公開ではなく
+ストア申請（R2）の前提。localhost と miniflare で採れた証拠を本番境界の証拠に読み替えない
+原則は維持し、本番側の証拠は `docs/qa/emergency-mode-production-2026-08-06/` に置いた。
 
 ---
 

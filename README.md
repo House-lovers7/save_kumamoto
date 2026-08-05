@@ -181,7 +181,7 @@ npx wrangler secret delete EMERGENCY_MODE  # 解除
 
 現在の判定は **`implementation_complete_boundary_unverified`** です。コードとローカル検査は通っていますが、実配信・実機・現地運用の証拠がありません。
 
-R1（Web先行公開）に残るブロッカーは、**本番 Workers での停止スイッチ実操作**、**問い合わせ窓口 URL の確定**、**本番URLでの配信確認**の3つです。R2（ストア申請）は実機・支援技術の検証と、ネイティブに停止経路が無いことの受諾が前提になります。
+R1（Web先行公開）のブロッカー3つのうち2つは解消済みです。**本番 Workers での停止スイッチ実操作**は2026年8月6日に実測（停止約7秒・復帰約2秒・停止中デプロイでも維持。`docs/qa/emergency-mode-production-2026-08-06/`）、**問い合わせ窓口 URL** は2026年8月1日に開設済み。残るのは**本番URLでの配信確認**（低速回線・オフライン再起動・rollback実走）です。R2（ストア申請）は実機・支援技術の検証と、ネイティブに停止経路が無いことの受諾が前提になります。
 
 公開前に残る課題（No-Go）の全体、Acceptance Chain、日付別の検証実測ログ、リリース手順は **[docs/RELEASE_AUDIT.md](docs/RELEASE_AUDIT.md)**。
 

@@ -59,6 +59,13 @@ Playwright headless Chromium（390×844 / 1440×900）による被災者シナ�
 - **対処**: 出典の記載（5-28）へ直した。
 - **残る疑い**: 書き写し誤りだった場合、**他の `facts` にも同種の誤りがある可能性がある**。ただし 8月4日の巡回では 20カード・全項目が出典と一致（`patrol:diff` exit 0）しているため、現時点で検出できる不一致は残っていない。写した行が増えるほどこの種の劣化は起きるので、巡回の機械照合を省略しないこと。
 
+## 本番デプロイだけが落ちた設定重複と、載っていなかった binding（2026年8月5日）
+
+- **症状**: `npx vinext deploy` が Cloudflare API に拒否された（code 10021 `Compatibility flag specified multiple times: nodejs_compat`）。ローカルの `npm test` は73件PASSのままで、**本番デプロイだけが落ちた**。
+- **原因**: ルートに wrangler 設定が無いと `vinext deploy` が `wrangler.jsonc` を自動生成する（deploy.js の generateWranglerConfig）。生成物が `nodejs_compat` を宣言し、`vite.config.ts` の同じ宣言とマージされて `compatibility_flags` が2重になっていた。既存テストは `.includes("nodejs_compat")` で重複を素通しした。
+- **対処**: `wrangler.jsonc` を正典として追跡下に置き、`vite.config.ts` からは compatibility_date / compatibility_flags を外して configPath で正典を明示（f8ea7e3）。重複・正典の一意性を検査するテストを追加し、重複を戻すとテストが落ちることを実測で確認した。
+- **あわせて**: `worker/index.ts` が使う **`env.IMAGES` の `images` binding が従来のビルド設定に無かった**。ローカルでは発覚しなかったため正典 `wrangler.jsonc` へ載せ、binding の存在もテストで検査するようにした。2026-08-06 の本番実測では、デプロイ後の bindings に `env.IMAGES` / `env.ASSETS` が出力され、repo への `wrangler.jsonc` 勝手生成も再発していない。
+
 ## ネイティブ（React Native / Expo、2026年7月31日）
 
 ### Web のロジック移植時に持ち込んだもの

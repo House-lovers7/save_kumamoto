@@ -1,0 +1,31 @@
+{
+  "label": "after-patrol-deploy",
+  "at": "2026-08-05T17:09:10.990Z",
+  "serverDate": "Wed, 05 Aug 2026 17:09:10 GMT",
+  "root": {
+    "status": 200,
+    "bytes": 43461,
+    "cacheControl": null
+  },
+  "status": {
+    "code": 200,
+    "mode": "通常表示",
+    "cacheControl": "no-store"
+  },
+  "counts": {
+    "110": 3,
+    "119": 5,
+    "応急給水": 16,
+    "無料入浴": 7,
+    "り災証明": 7,
+    "火の君文化センター": 4,
+    "氷川町": 28,
+    "確認できません": 4,
+    "有効期限切れ": 0,
+    "emergency-strip": 1,
+    "action-section": 1,
+    "need-grid": 17,
+    "area-map": 8,
+    "skip-link": 1
+  }
+}
