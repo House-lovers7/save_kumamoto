@@ -51,7 +51,28 @@ patrol.yml がやるのは**検知と通知だけ**である。`PATROL_AT` は�
 | ④ 常駐ローカルマシン（Mac mini / Raspberry Pi の launchd/cron + `claude -p` 等） | API キー・認証が手元に留まる（GH Secrets への配置不要 = credential 拡大なし）。patrol-diff.mjs（Node）を移植なしで実行できる。ACOS の Resident Runtime 枠と整合 | 可用性が個人環境依存（電源・スリープ・回線断で止まる。ただし止まっても24時間失効で安全側に倒れる）。LLM 呼び出しは expensive_api Gate のまま。Raspberry Pi 上のローカルLLMは出典引き写し編集でも品質・検証実績が不足 [中] |
 
 - **④の位置づけ（2026-08-06 運営者提案を受けて追記）**: 監視（検知）は①が稼働済みのため、④の追加ハードが検知に必要になることはない。④が意味を持つのは**工程(b)(c)の起案実行基盤**として。検知は① GH Actions のまま、起案だけ手元の Mac mini が Issue をポーリングして PR を作る折衷構成も可能 [低〜中]
-- **実装前の必須 Preflight（未実施）**: GitHub Actions schedule の当日公式仕様（無効化条件・遅延特性・GITHUB_TOKEN で PR を作る際の制約）/ Claude Code scheduled agents・`claude -p` の当日公式 Docs（④の headless 常駐運用の可否・制約を含む）/ （②採用時）Cloudflare Cron Triggers。本設計書の基盤比較は記憶ベース [低〜中] であり、実装判断の根拠にはこの Preflight を通すこと
+- **実装前の必須 Preflight**: GitHub Actions schedule の当日公式仕様（無効化条件・遅延特性・GITHUB_TOKEN で PR を作る際の制約）/ Claude Code scheduled agents・`claude -p` の当日公式 Docs（④の headless 常駐運用の可否・制約を含む）/ （②採用時）Cloudflare Cron Triggers
+
+### Preflight 結果（2026-08-06 実施。§4-B 決定「Preflight のみ先行」の実施記録）
+
+GitHub Actions 分（docs.github.com の当日取得）[高]:
+
+- **自動無効化**: public リポジトリでは「60日間リポジトリにアクティビティが無い」と scheduled workflow が自動無効化される（原文: "In a public repository, scheduled workflows are automatically disabled when no repository activity has occurred in 60 days."）。日次巡回 commit が続く限り該当しないが、**巡回が60日途絶えると検知 cron ごと止まる**連鎖に注意（不変条件3の根拠が公式仕様でも裏付く）
+- **遅延**: 高負荷時（毎時0分前後を含む）に遅延しうる・実行保証なし（events-that-trigger-workflows）。実測の定刻+35〜60分と整合
+- **最短間隔**: 5分
+- **GITHUB_TOKEN で PR 起案（段階2の①で必要）**: (a) 「Allow GitHub Actions to create and approve pull requests」設定は**個人リポジトリでは既定で無効**（Settings → Actions → General → Workflow permissions で有効化が必要 = production_change 相当の設定変更）。(b) `permissions: pull-requests: write` の明示が必要。(c) **GITHUB_TOKEN が作成した PR は他の workflow run をトリガーしない**（起案 PR に対して CI を自動で走らせたい場合は PAT / GitHub App が必要になり、credential 管理がさらに拡大する）
+
+Claude Code / `claude -p` 分（code.claude.com/docs の当日取得。claude-code-guide 委譲調査）[高]:
+
+- **`claude -p`（headless）は公式サポート**（`docs/en/headless.md`）: `--output-format json` / `--allowedTools`（`"Bash(git diff *)"` 形式の絞り込み可）/ `--permission-mode` / `--max-turns` / `--max-budget-usd`（支出上限）/ exit code 連携。**通常モードはサブスクリプション認証で動く**（`--bare` モードのみ `ANTHROPIC_API_KEY` 必須）→ ④（ローカル常駐）は**APIキーを新たにどこにも置かずに実行できる**
+- **①（GH Actions）の公式形は `anthropics/claude-code-action@v1`**（GA。`docs/en/github-actions.md`）: PR 作成は公式サポート。ただし **Claude GitHub App のインストール + `ANTHROPIC_API_KEY` を Repository Secret へ配置が必須** → ①の難点（credential 拡大）は公式仕様で確定
+- **④の公式スケジュール実行**: Desktop scheduled tasks（ローカル・最小1分・常続。`docs/en/desktop-scheduled-tasks.md`）/ Routines（Anthropic cloud・最小1時間。`docs/en/routines.md`）/ `/loop`（セッション内・7日で失効）。launchd/cron から `claude -p` 直接も技術的に可能だが、公式は Desktop scheduled tasks を示唆
+- **Raspberry Pi**: システム要件は「x64 or **ARM64**・RAM 4GB+・Ubuntu 20.04+/Debian 10+/Alpine 3.19+」（`docs/en/setup.md`）。「Raspberry Pi」の固有名詞は公式に無く、Pi 4B/5（ARM64）は要件を満たす可能性が高いが**未検証 [低]**。Pi 3 以前（ARMv7）は要件外。ローカルLLM運用の品質懸念（④の難点欄）は別問題として残る
+- 未確認で残ること [中]: cron/launchd 環境での安全な credential 管理の公式ガイド / `--bare` の制約全列挙 / Pi 実機での動作実績
+
+**Preflight 後の比較の含意 [中]**（採否判断は運営者。§4-B のとおり実装は未決）: ④は「サブスクリプション認証のまま・credential 配置ゼロ・patrol-diff.mjs 移植不要」で段階2を成立させうる唯一の候補になった。①は PR 作成まで公式サポートだが GH Secrets への API キー配置と「Allow GitHub Actions to create and approve pull requests」の設定変更（既定無効）が必須。
+
+（②Cloudflare Cron Triggers は②を採用候補に上げる時に実施。未実施）
 
 ## 4. 運営者判断ポイント（2026-08-06 決定済み。決定記録は表の下）
 
