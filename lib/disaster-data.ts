@@ -130,8 +130,8 @@ export const categoryLabels: Record<ActionCategory, string> = {
  * うえで、この2つだけを書き換える。**再確認せずにここを進めることは鮮度の捏造であり禁止**。
  * 期限は確認から24時間。
  */
-const PATROL_AT = "2026-08-06T01:44:00+09:00";
-const PATROL_EXPIRES_AT = "2026-08-07T01:44:00+09:00";
+const PATROL_AT = "2026-08-06T08:00:00+09:00";
+const PATROL_EXPIRES_AT = "2026-08-07T08:00:00+09:00";
 
 /**
  * 巡回で確認した1カード分の時刻。

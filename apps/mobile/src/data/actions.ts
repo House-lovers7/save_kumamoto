@@ -159,9 +159,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本県 防災推進課",
     "sourceUrl": "https://www.pref.kumamoto.jp/soshiki/222/",
     "publishedAt": "2026-08-01T00:00:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -195,9 +195,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本市",
     "sourceUrl": "https://www.city.kumamoto.jp/list04828.html",
     "publishedAt": "2026-08-01T00:00:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本市"
@@ -266,8 +266,8 @@ export const actionCards: ActionCard[] = [
     "sourceUrl": "https://www.kumamoto-waterworks.jp/waterworks_emergency/42551/",
     "sourceLandmark": "【第37報】応急給水活動終了のお知らせ",
     "publishedAt": "2026-08-05T17:35:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
     "expiresAt": "2026-08-06T19:00:00+09:00",
     "sourceStatus": "official",
     "availableWindows": [
@@ -332,9 +332,9 @@ export const actionCards: ActionCard[] = [
     "sourceUrl": "https://www.city.kumamoto.jp/kiji00315906/index.html",
     "sourceLandmark": "◆井戸リスト",
     "publishedAt": "2026-07-31T18:00:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本市"
@@ -387,9 +387,9 @@ export const actionCards: ActionCard[] = [
     "sourceUrl": "https://www.town.hikawa.kumamoto.jp/kinkyu.html",
     "sourceLandmark": "給水車による応急給水について",
     "publishedAt": "2026-08-01T15:36:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "氷川町"
@@ -437,9 +437,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本市",
     "sourceUrl": "https://www.city.kumamoto.jp/list04828.html",
     "publishedAt": "2026-08-01T00:00:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "unavailable",
     "unverified": "食料・生活用品の配布場所と時間をまとめた公式案内は、2026年8月1日の巡回でも確認できませんでした。熊本市の支援制度の冊子にある「被服、寝具その他生活必需品の支給」は申請受付がまだ準備中で、食料の配布についての項目はありません。",
     "areas": [
@@ -482,9 +482,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "氷川町 総務課",
     "sourceUrl": "https://www.town.hikawa.kumamoto.jp/kinkyu.html",
     "publishedAt": "2026-08-01T00:00:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "unavailable",
     "unverified": "氷川町が受け取る側へ向けて出していた「8月1日（土曜日）の水・食料品の配布について」は、2026年8月4日21時の巡回では確認できませんでした。現在載っているのは提供する側への「支援物資のご協力をお願いします」で、配布の場所と時間は確認できていません。同じページの給水車による応急給水は続いています。",
     "areas": [
@@ -531,9 +531,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "資源エネルギー庁 資源・燃料部",
     "sourceUrl": "https://www.enecho-ss.meti.go.jp/b/enecho/",
     "publishedAt": "2026-07-28T16:31:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -582,9 +582,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本市 廃棄物計画課",
     "sourceUrl": "https://www.city.kumamoto.jp/kiji00372079/index.html",
     "publishedAt": "2026-07-31T00:00:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "unavailable",
     "unverified": "断水中のトイレ・携帯トイレ・し尿の処分方法の公式案内は、2026年8月1日の巡回でも確認できませんでした。熊本市上下水道局の緊急情報20件にも記載がありません。リンク先で確認できるのは災害ごみの出し方です。",
     "areas": [
@@ -639,9 +639,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "国土交通省 九州地方整備局",
     "sourceUrl": "https://www.qsr.mlit.go.jp/content/000002570.pdf",
     "publishedAt": "2026-07-30T00:00:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "宇城市",
@@ -695,9 +695,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本市 保育幼稚園課",
     "sourceUrl": "https://www.city.kumamoto.jp/kiji00372099/index.html",
     "publishedAt": "2026-07-29T00:00:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "unavailable",
     "unverified": "ミルク・離乳食・おむつの配布先と授乳・休憩場所の公式案内は、2026年8月1日の巡回でも確認できませんでした。リンク先の保育施設の開園状況は7月30日分までで、その先は通っている園へ直接確認するよう案内されています。",
     "areas": [
@@ -800,9 +800,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本市",
     "sourceUrl": "https://www.city.kumamoto.jp/kiji00372200/index.html",
     "publishedAt": "2026-08-05T00:00:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本市"
@@ -854,9 +854,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本県 認知症施策・地域ケア推進課",
     "sourceUrl": "https://www.pref.kumamoto.jp/soshiki/33/274616.html",
     "publishedAt": "2026-07-29T00:00:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -895,9 +895,9 @@ export const actionCards: ActionCard[] = [
     "sourceUrl": "https://www.city.kumamoto.jp/default.html",
     "sourceLandmark": "避難所情報",
     "publishedAt": "2026-07-28T16:49:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本市"
@@ -947,9 +947,9 @@ export const actionCards: ActionCard[] = [
     "sourceUrl": "https://www.town.hikawa.kumamoto.jp/kinkyu.html",
     "sourceLandmark": "【開設中の避難所について】",
     "publishedAt": "2026-07-31T10:56:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "氷川町"
@@ -994,9 +994,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本県 国保・高齢者医療課",
     "sourceUrl": "https://www.pref.kumamoto.jp/soshiki/43/274584.html",
     "publishedAt": "2026-07-29T00:00:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -1042,9 +1042,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "電気通信事業者協会（TCA）",
     "sourceUrl": "https://www.tca.or.jp/information/japan-roaming.html",
     "publishedAt": "2026-04-01T00:00:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -1083,9 +1083,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "国土交通省 九州地方整備局",
     "sourceUrl": "https://www.qsr.mlit.go.jp/bousai_joho/r80728kumamotozisinn.html",
     "publishedAt": "2026-07-31T16:00:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本県全域"
@@ -1160,9 +1160,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本市 各区役所福祉課",
     "sourceUrl": "https://www.city.kumamoto.jp/kiji0032451/index.html",
     "publishedAt": "2026-08-02T00:00:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本市"
@@ -1228,9 +1228,9 @@ export const actionCards: ActionCard[] = [
     "sourceName": "熊本市 住宅政策課",
     "sourceUrl": "https://www.city.kumamoto.jp/kiji00372143/index.html",
     "publishedAt": "2026-08-04T00:00:00+09:00",
-    "fetchedAt": "2026-08-06T01:44:00+09:00",
-    "checkedAt": "2026-08-06T01:44:00+09:00",
-    "expiresAt": "2026-08-07T01:44:00+09:00",
+    "fetchedAt": "2026-08-06T08:00:00+09:00",
+    "checkedAt": "2026-08-06T08:00:00+09:00",
+    "expiresAt": "2026-08-07T08:00:00+09:00",
     "sourceStatus": "official",
     "areas": [
       "熊本市"
